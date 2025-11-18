@@ -259,13 +259,28 @@ function setActivePattern(el) {
 function applyPatternColor(patternEl, color) {
   const svg = patternEl.querySelector("svg");
   if (!svg) return;
-  svg.querySelectorAll("[fill]").forEach(el => {
+
+  // 1) minden rajzelemre ráírjuk a fill-t
+  const targets = svg.querySelectorAll(
+    "path, rect, circle, ellipse, polygon, polyline"
+  );
+
+  targets.forEach(el => {
     if (el.getAttribute("fill") !== "none") {
-      el.setAttribute("fill", color);
+      el.setAttribute("fill", color);   // attribútum
+      el.style.fill = color;            // inline style – erősebb, mint a class
     }
   });
-}
 
+  // 2) ha van <style> blokk, abban is cseréljük a fill színeket (pl. .cls-1{fill:#xxxxxx})
+  const styleEl = svg.querySelector("style");
+  if (styleEl && styleEl.textContent.includes("fill:")) {
+    styleEl.textContent = styleEl.textContent.replace(
+      /fill:\s*#[0-9a-fA-F]{3,6}/g,
+      `fill:${color}`
+    );
+  }
+}
 /* -------- DRAG -------- */
 
 function startPatternDrag(e, pattern) {
