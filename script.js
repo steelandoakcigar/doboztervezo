@@ -1,10 +1,13 @@
+
 /*****************************************************************
- * EMLÉKDOBOZ TERVEZŐ – V3
+ * EMLÉKDOBOZ TERVEZŐ – EXAKT SVG + SZÍNEZÉS + TISZTA EXPORT
  * - 3–7 cm feliratmagasság
  * - Felirat drag & drop (szöveg fogható)
- * - Minták: saját SVG fájlokból, drag + resize
- * - PintyPlus színpaletták (felirat + minta + doboz árnyalat)
- * - PNG export (html2canvas, 2×)
+ * - Minták: icons/*.svg fájlokból (valódi gyártási minták)
+ * - Minták drag + resize (nem ugrik)
+ * - Minták színe: palettáról állítható (fill/style felülírva)
+ * - Doboz akril színezése overlay rétegen
+ * - PNG export: 2×, fogantyúk és aktív keretek NEM látszanak
  *****************************************************************/
 
 const COLORS = [
@@ -17,9 +20,9 @@ const COLORS = [
 const MIN_PATTERN = 80;
 const MAX_PATTERN = 300;
 
-let currentTitleColor   = COLORS[4];
-let currentPatternColor = COLORS[5];
-let currentBoxTint      = null;
+let currentTitleColor   = COLORS[4]; // felirat
+let currentPatternColor = COLORS[5]; // minták
+let currentBoxTint      = null;      // doboz overlay
 
 let activePattern = null;
 let patternDrag   = null;
@@ -61,7 +64,8 @@ function initPalettes() {
     // doboz
     const b = makeSwatch(color, () => {
       currentBoxTint = color;
-      document.getElementById("box-tint-layer").style.background = hexToRgba(color, 0.45);
+      document.getElementById("box-tint-layer").style.background =
+        hexToRgba(color, 0.45);
     });
     boxPal.appendChild(b);
   });
@@ -102,7 +106,7 @@ function initTitle() {
     text.textContent = input.value || "Felirat";
   });
 
-  // magasság 3–7 cm
+  // magasság 3–7 cm között
   size.addEventListener("input", () => {
     let cm = parseFloat(size.value);
     if (isNaN(cm)) cm = 4;
@@ -110,7 +114,7 @@ function initTitle() {
     if (cm > 7) cm = 7;
     size.value = cm;
 
-    const BOX_CM_HEIGHT = 22.5;                  // 225 mm = 22,5 cm
+    const BOX_CM_HEIGHT = 22.5; // 225 mm
     const box = document.getElementById("box");
     const boxPxHeight = box.getBoundingClientRect().height;
 
@@ -124,7 +128,7 @@ function initTitle() {
   });
   size.dispatchEvent(new Event("input"));
 
-  // drag – csak a szöveg fogható
+  // drag – a teljes title-layer-t visszük, de a szöveget fogod
   let dragState = null;
 
   text.addEventListener("mousedown", (e) => {
@@ -158,10 +162,10 @@ function initTitle() {
 }
 
 /*****************************************************************
- * MINTÁK – SAJÁT SVG-K, DRAG, RESIZE
+ * MINTÁK – SAJÁT SVG FÁJLOKBÓL
  *****************************************************************/
 function initPatterns() {
-  // Gombok: a bennük lévő <img> src-jét használjuk
+  // Mintagombok: a bennük lévő <img> src az igazi SVG útvonal
   document.querySelectorAll(".pattern-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const img = btn.querySelector("img");
@@ -172,14 +176,18 @@ function initPatterns() {
         addPatternFromSvg(svgText);
       } catch (err) {
         console.error("SVG betöltési hiba:", err);
-        alert("Nem sikerült betölteni a minta SVG-t. Futtasd a projektet helyi szerverről (http://localhost...), ne közvetlenül fájlból.");
+        alert(
+          "Nem sikerült betölteni a minta SVG-t.\n" +
+          "Ellenőrizd, hogy az icons/*.svg fájlok feltöltve vannak, " +
+          "és a fájlnevek pontosan megegyeznek az index.html-ben levő src-kkel."
+        );
       }
     });
   });
 
   const layer = document.getElementById("patterns-layer");
 
-  // Egyetlen mousedown handler – vagy drag, vagy resize indul
+  // drag / resize indítása
   layer.addEventListener("mousedown", (e) => {
     if (e.button !== 0) return;
 
@@ -201,10 +209,7 @@ function initPatterns() {
   document.addEventListener("mouseup", onPatternUp);
 }
 
-/**
- * SVG fájl betöltése szövegként.
- * FONTOS: file:// alatt a fetch sokszor hibára fut – ezért kell a http://localhost szerver.
- */
+/** SVG betöltése szövegként (ugyanarról a domainről) */
 async function loadSvgAsText(url) {
   const res = await fetch(url);
   if (!res.ok) {
@@ -213,9 +218,7 @@ async function loadSvgAsText(url) {
   return await res.text();
 }
 
-/**
- * Új minta létrehozása egy SVG szövegből.
- */
+/** Új minta létrehozása egy SVG szövegből */
 function addPatternFromSvg(svgText) {
   const layer = document.getElementById("patterns-layer");
   const layerRect = layer.getBoundingClientRect();
@@ -242,7 +245,7 @@ function addPatternFromSvg(svgText) {
 
   layer.appendChild(el);
 
-  // aktuális mintaszín
+  // aktuális mintaszín rákényszerítése
   applyPatternColor(el, currentPatternColor);
   setActivePattern(el);
 }
@@ -254,25 +257,33 @@ function setActivePattern(el) {
 }
 
 /**
- * Kitöltésszín cseréje az SVG-n belül.
+ * Mintaszín alkalmazása az SVG-n belül.
+ * Erőből ráírjuk fill/style.fill-t az összes alakzatra,
+ * így felülírjuk az Illustrator/InkScape féle .cls-1 { fill: ... } definíciókat is.
  */
 function applyPatternColor(patternEl, color) {
   const svg = patternEl.querySelector("svg");
   if (!svg) return;
 
-  // 1) minden rajzelemre ráírjuk a fill-t
   const targets = svg.querySelectorAll(
     "path, rect, circle, ellipse, polygon, polyline"
   );
 
   targets.forEach(el => {
-    if (el.getAttribute("fill") !== "none") {
-      el.setAttribute("fill", color);   // attribútum
-      el.style.fill = color;            // inline style – erősebb, mint a class
+    const fillAttr = el.getAttribute("fill");
+    if (fillAttr !== "none") {
+      el.setAttribute("fill", color); // attribútum
+      el.style.fill = color;          // inline style – ez a legerősebb
+    }
+    // ha csak stroke van (kontúros elem), opcionálisan ezt is átszínezhetjük
+    const strokeAttr = el.getAttribute("stroke");
+    if (strokeAttr && strokeAttr !== "none") {
+      el.setAttribute("stroke", color);
+      el.style.stroke = color;
     }
   });
 
-  // 2) ha van <style> blokk, abban is cseréljük a fill színeket (pl. .cls-1{fill:#xxxxxx})
+  // Ha van <style> blokk, ott is cserélhetünk fill-t, de az inline úgyis felülírja.
   const styleEl = svg.querySelector("style");
   if (styleEl && styleEl.textContent.includes("fill:")) {
     styleEl.textContent = styleEl.textContent.replace(
@@ -281,6 +292,7 @@ function applyPatternColor(patternEl, color) {
     );
   }
 }
+
 /* -------- DRAG -------- */
 
 function startPatternDrag(e, pattern) {
@@ -288,7 +300,7 @@ function startPatternDrag(e, pattern) {
   const layerRect = layer.getBoundingClientRect();
   const rect = pattern.getBoundingClientRect();
 
-  // hogy ne ugorjon: eltároljuk, hol fogtad meg a mintát
+  // ne ugorjon: ahol megfogtad, ott marad az egér alatt
   const offsetX = e.clientX - rect.left;
   const offsetY = e.clientY - rect.top;
 
@@ -358,7 +370,7 @@ function clamp(v, min, max) {
 }
 
 /*****************************************************************
- * PNG EXPORT
+ * PNG EXPORT – fogantyúk + aktív keret nélkül
  *****************************************************************/
 function initExport() {
   const btn = document.getElementById("export-btn");
@@ -366,6 +378,15 @@ function initExport() {
 
   btn.addEventListener("click", async () => {
     try {
+      // 1) összes resize-handle elrejtése
+      const handles = document.querySelectorAll(".resize-handle");
+      handles.forEach(h => h.style.display = "none");
+
+      // 2) aktív keret ideiglenes kikapcsolása
+      const activeBefore = document.querySelector(".pattern.active");
+      document.querySelectorAll(".pattern").forEach(p => p.classList.remove("active"));
+
+      // 3) canvas render
       const canvas = await html2canvas(box, {
         scale: 2,
         useCORS: true,
@@ -373,17 +394,19 @@ function initExport() {
         logging: false
       });
 
+      // 4) UI visszaállítása
+      handles.forEach(h => h.style.display = "block");
+      if (activeBefore) activeBefore.classList.add("active");
+
+      // 5) letöltés
       const link = document.createElement("a");
       link.href = canvas.toDataURL("image/png");
       link.download = "emlekdoboz.png";
       link.click();
+
     } catch (err) {
       console.error("Export hiba:", err);
-      alert(
-        "Hiba történt a PNG export során.\n" +
-        "Nagyon gyakran ez azért van, mert a fájlt közvetlenül megnyitod (file://...). " +
-        "Indíts egy egyszerű helyi webszervert, és onnan nyisd meg (http://localhost/...)."
-      );
+      alert("Hiba történt a PNG export során.");
     }
   });
 }
