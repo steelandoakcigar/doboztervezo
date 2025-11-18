@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>Doboztervező A4</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        @font-face {
+            font-family: 'AlwaysInMyHeart';
+            src: url('AlwaysInMyHeart.ttf') format('truetype');
+        }
+    </style>
+</head>
+<body>
+
+<div id="container">
+
+    <div id="canvas-wrapper">
+        <div id="board">
+            <img id="woodTexture" src="assets/textures/wood.png" alt="">
+            <div id="boardColorOverlay"></div>
+
+            <!-- Ide kerül minden (felirat + minták) -->
+            <div id="designArea">
+                <div id="textElement" class="draggable">Felirat</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sidebar">
+        <h3>Felirat</h3>
+        <input id="textInput" type="text" placeholder="Pl. Nándi kincsei">
+        <label for="textSize">Méret (cm)</label>
+        <input id="textSize" type="range" min="2.5" max="10" step="0.1" value="4">
+
+        <h4>Felirat színe</h4>
+        <div class="color-row" id="textColors"></div>
+
+        <h3>Minták (fogd és húzd a dobozra)</h3>
+        <div id="icons">
+            <img class="icon" src="icons/star_1.svg" draggable="true" alt="">
+            <img class="icon" src="icons/star_2.svg" draggable="true" alt="">
+            <img class="icon" src="icons/cloud_1.svg" draggable="true" alt="">
+            <img class="icon" src="icons/cloud_2.svg" draggable="true" alt="">
+        </div>
+
+        <h3>Minták színe</h3>
+        <label for="groupSelect">Csoport</label>
+        <select id="groupSelect">
+            <option value="stars">Csillagok</option>
+            <option value="clouds">Felhők</option>
+        </select>
+        <div class="color-row" id="patternColors"></div>
+
+        <h3>Doboz színe</h3>
+        <div class="color-row" id="boardColors"></div>
+
+        <button id="saveBtn">Kép mentése (PNG)</button>
+    </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
