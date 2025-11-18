@@ -2,10 +2,9 @@
 <html lang="hu">
 <head>
 <meta charset="UTF-8">
-<title>Emlékdoboz Tervező</title>
+<title>Emlékdoboz tervező</title>
 
 <style>
-
 /* ------------------------------------------------------------
    FONT
 ------------------------------------------------------------ */
@@ -15,26 +14,28 @@
 }
 
 /* ------------------------------------------------------------
-   GLOBAL STYLE
+   ALAP LAYOUT
 ------------------------------------------------------------ */
-body {
-  margin: 0;
-  padding: 30px;
-  background: #f4f4f6;
-  font-family: system-ui, sans-serif;
-  display: flex;
-  gap: 40px;
+* {
+  box-sizing: border-box;
 }
 
-/* ------------------------------------------------------------
-   PREVIEW LEFT SIDE
------------------------------------------------------------- */
+body {
+  margin: 0;
+  padding: 24px;
+  background: #f4f4f6;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  display: flex;
+  gap: 32px;
+}
+
+/* BAL OLDALI NÉZET – DOBOZ */
 #previewWrapper {
   width: 760px;
   height: 520px;
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+  background: #ffffff;
+  border-radius: 0; /* szögletes */
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08); /* halvány árnyék */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -44,10 +45,31 @@ body {
 #previewCanvas {
   width: 700px;
   height: 470px;
-  border-radius: 24px;
-  background: #d9d9d9;
+  background: #e5e5e5;
+  border-radius: 0; /* szögletes */
   position: relative;
   overflow: hidden;
+}
+
+/* fa textúra overlay – nagyon finom natúr nyír hatás */
+#previewCanvas::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* finom „fa” hatás CSS alapján */
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,0.08) 0px,
+      rgba(255,255,255,0.08) 1px,
+      rgba(0,0,0,0.03) 1px,
+      rgba(0,0,0,0.03) 2px,
+      transparent 2px,
+      transparent 4px
+    );
+  opacity: 0.18;
+  mix-blend-mode: soft-light;
 }
 
 #boxColorLayer {
@@ -56,108 +78,121 @@ body {
   background: #e5e5e5;
 }
 
-#titleText {
+/* FELIRAT – DRAG & DROP */
+#titleElement {
   position: absolute;
   left: 50%;
-  font-family: "Always In My Heart";
-  color: #4b2e13;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-family: "Always In My Heart", cursive;
+  color: #111827;
   white-space: nowrap;
-  pointer-events: none;
+  cursor: grab;
+  user-select: none;
   z-index: 20;
-  transform: translateX(-50%);
 }
 
-/* ------------------------------------------------------------
-   DECOR ITEMS
------------------------------------------------------------- */
+#titleElement.dragging {
+  outline: 1px dashed rgba(0,0,0,0.4);
+  cursor: grabbing;
+}
+
+/* DEKOR ELEMEK */
 .decor {
   position: absolute;
   cursor: grab;
   z-index: 30;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25)); /* nagyon halvány árnyék a minták alatt */
+  user-select: none;
 }
 
-.decor.selected {
-  outline: 2px dashed rgba(0,0,0,0.45);
+.decor.dragging {
+  cursor: grabbing;
+  outline: 1px dashed rgba(0,0,0,0.35);
 }
 
 .decor svg {
   display: block;
+  pointer-events: none;
 }
 
 .resize-handle {
   width: 14px;
   height: 14px;
-  background: white;
-  border: 2px solid black;
+  background: #ffffff;
+  border: 2px solid #111827;
   border-radius: 50%;
   position: absolute;
-  right: -7px;
-  bottom: -7px;
+  right: -8px;
+  bottom: -8px;
   cursor: se-resize;
-  display: none; /* alapból nem látszik */
+  display: none; /* csak művelet közben látszik */
+  z-index: 40;
 }
 
+/* MÉRET BUBORÉK */
 #sizeBubble {
   position: absolute;
-  padding: 6px 12px;
-  background: black;
-  color: white;
-  border-radius: 6px;
+  padding: 4px 8px;
+  background: #111827;
+  color: #ffffff;
   font-size: 12px;
+  border-radius: 4px;
   z-index: 999;
   display: none;
 }
 
-/* ------------------------------------------------------------
-   CONTROL PANEL (RIGHT SIDE)
------------------------------------------------------------- */
+/* JOBB OLDALI PANEL */
 #panel {
   width: 420px;
 }
 
 .section {
-  background: white;
-  padding: 20px;
+  background: #ffffff;
+  padding: 16px 18px;
   border-radius: 16px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-  margin-bottom: 25px;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.08);
+  margin-bottom: 18px;
 }
 
 .section h3 {
-  margin-top: 0;
+  margin: 0 0 8px 0;
+  font-size: 16px;
 }
 
+/* SZÍN GRID */
 .color-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
-  margin-top: 12px;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .color-swatch {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   border-radius: 8px;
   cursor: pointer;
   border: 2px solid transparent;
 }
 
 .color-swatch.selected {
-  border-color: black;
+  border-color: #111827;
 }
 
+/* PALETTA */
 #palette {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
 }
 
 .palette-item {
-  width: 64px;
-  height: 64px;
-  background: #fff;
+  width: 60px;
+  height: 60px;
+  background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -165,70 +200,78 @@ body {
 }
 
 .palette-item img {
-  width: 42px;
+  width: 38px;
+  pointer-events: none;
 }
 
-/* PRINT – most csak tartaléknak marad benne */
+/* GOMB */
+#saveImgBtn {
+  width: 100%;
+  padding: 13px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 15px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+#saveImgBtn:hover {
+  background: #000000;
+}
+
+/* PRINT (tartalék) */
 @media print {
   body {
-    padding: 0;
     margin: 0;
+    padding: 0;
     display: block;
-    background: white;
+    background: #ffffff;
   }
   #panel {
     display: none;
   }
   #previewWrapper {
-    box-shadow: none;
     width: 100%;
     height: auto;
-    border-radius: 0;
-    margin: 0;
+    box-shadow: none;
   }
   #previewCanvas {
     width: 100%;
     height: auto;
-    border-radius: 0;
   }
 }
-
 </style>
 </head>
 
 <body>
 
-<!-- ------------------------------------------------------------
-     BAL OLDAL: PREVIEW
------------------------------------------------------------- -->
+<!-- BAL OLDAL: NÉZET -->
 <div id="previewWrapper">
   <div id="previewCanvas">
     <div id="boxColorLayer"></div>
-    <div id="titleText">Nándi alkotásai</div>
+    <div id="titleElement">Nándi alkotásai</div>
   </div>
   <div id="sizeBubble"></div>
 </div>
 
-<!-- ------------------------------------------------------------
-     JOBB OLDAL: PANEL
------------------------------------------------------------- -->
+<!-- JOBB OLDAL: PANEL -->
 <div id="panel">
 
   <!-- FELIRAT -->
   <div class="section">
     <h3>Felirat</h3>
-    <input id="titleInput" type="text" placeholder="Pl. Nándi alkotásai"
-           style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc;">
+    <input id="titleInput" type="text"
+           placeholder="Pl. Nándi alkotásai"
+           style="width:100%;padding:7px 9px;border-radius:8px;border:1px solid #d1d5db;">
+    <div style="margin-top:10px;font-size:14px;">
+      Méret: <span id="titleSizeLabel">2.0 cm</span>
+    </div>
+    <input id="titleSize" type="range" min="0.5" max="6" step="0.1" value="2"
+           style="width:100%;margin-top:4px;">
 
-    <p style="margin-top:15px;">Méret: <span id="titleSizeLabel">2.0 cm</span></p>
-    <input id="titleSize" type="range" min="0.5" max="6" step="0.1" value="2" style="width:100%">
-
-    <p style="margin-top:15px;">Pozíció</p>
-    <label><input type="radio" name="pos" value="center" checked> Középen</label><br>
-    <label><input type="radio" name="pos" value="top"> Felső részben (3cm)</label><br>
-    <label><input type="radio" name="pos" value="bottom"> Alsó részben (3cm)</label><br>
-
-    <p style="margin-top:15px;">Felirat színe</p>
+    <div style="margin-top:12px;font-size:14px;">Felirat színe</div>
     <div class="color-grid" id="titleColorGrid"></div>
   </div>
 
@@ -242,37 +285,52 @@ body {
   <div class="section">
     <h3>Minták (fogd és húzd a dobozra)</h3>
     <div id="palette">
-      <div class="palette-item" data-type="star_1"><img src="star_1.svg" alt=""></div>
-      <div class="palette-item" data-type="star_2"><img src="star_2.svg" alt=""></div>
-      <div class="palette-item" data-type="cloud_1"><img src="cloud_1.svg" alt=""></div>
-      <div class="palette-item" data-type="cloud_2"><img src="cloud_2.svg" alt=""></div>
+      <div class="palette-item" data-type="star_1">
+        <img src="./star_1.svg" alt="csillag 1">
+      </div>
+      <div class="palette-item" data-type="star_2">
+        <img src="./star_2.svg" alt="csillag 2">
+      </div>
+      <div class="palette-item" data-type="cloud_1">
+        <img src="./cloud_1.svg" alt="felhő 1">
+      </div>
+      <div class="palette-item" data-type="cloud_2">
+        <img src="./cloud_2.svg" alt="felhő 2">
+      </div>
     </div>
   </div>
 
   <!-- MINTÁK SZÍNE -->
   <div class="section">
     <h3>Minták színe</h3>
-    <p>Csoport:</p>
-    <label><input type="radio" name="decoGroup" value="star" checked> Csillagok</label><br>
-    <label><input type="radio" name="decoGroup" value="cloud"> Felhők</label>
-    <div class="color-grid" id="decorColorGrid" style="margin-top:12px;"></div>
+    <div style="font-size:14px;margin-bottom:6px;">Csoport:</div>
+    <label style="font-size:14px;">
+      <input type="radio" name="decoGroup" value="star" checked> Csillagok
+    </label><br>
+    <label style="font-size:14px;">
+      <input type="radio" name="decoGroup" value="cloud"> Felhők
+    </label>
+    <div class="color-grid" id="decorColorGrid" style="margin-top:10px;"></div>
   </div>
 
-  <button id="saveImgBtn" 
-          style="width:100%;padding:14px;background:black;color:white;font-size:16px;border:none;border-radius:12px;cursor:pointer;">
-    Kép mentése (PNG)
-  </button>
-
+  <button id="saveImgBtn">Kép mentése (PNG)</button>
 </div>
 
 <!-- html2canvas CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
-
 /* ------------------------------------------------------------
-   SZÍNEK – Pinty Plus Home
+   KONSTANSOK
 ------------------------------------------------------------ */
+const previewCanvas = document.getElementById("previewCanvas");
+const boxColorLayer = document.getElementById("boxColorLayer");
+const titleElement  = document.getElementById("titleElement");
+const titleInput    = document.getElementById("titleInput");
+const titleSize     = document.getElementById("titleSize");
+const titleSizeLabel= document.getElementById("titleSizeLabel");
+const sizeBubble    = document.getElementById("sizeBubble");
+
 const COLORS = [
   {hex:"#e5e5e5"}, {hex:"#6b7280"}, {hex:"#0ea5e9"}, {hex:"#1d4ed8"},
   {hex:"#111827"}, {hex:"#7c2d12"}, {hex:"#d6be8a"}, {hex:"#4b5563"},
@@ -280,16 +338,21 @@ const COLORS = [
   {hex:"#f9a8d4"}, {hex:"#a855f7"}
 ];
 
+let titleColor = COLORS[4];      // induló: sötét
+let decorColorTarget = "star";   // csillag / felhő
+const svgCache = {};             // betöltött SVG-k cache
+
 /* ------------------------------------------------------------
-   SZÍN GRID
+   SEGÉD – SZÍN GRID
 ------------------------------------------------------------ */
-function buildColorGrid(grid, callback){
-  COLORS.forEach(c=>{
-    let sw=document.createElement("div");
-    sw.className="color-swatch";
-    sw.style.background=c.hex;
-    sw.onclick=()=>{
-      grid.querySelectorAll(".color-swatch").forEach(x=>x.classList.remove("selected"));
+function buildColorGrid(grid, callback, defaultIndex = 0) {
+  COLORS.forEach((c, idx) => {
+    const sw = document.createElement("div");
+    sw.className = "color-swatch";
+    sw.style.background = c.hex;
+    if (idx === defaultIndex) sw.classList.add("selected");
+    sw.onclick = () => {
+      grid.querySelectorAll(".color-swatch").forEach(x => x.classList.remove("selected"));
       sw.classList.add("selected");
       callback(c);
     };
@@ -298,214 +361,338 @@ function buildColorGrid(grid, callback){
 }
 
 /* ------------------------------------------------------------
-   FELIRAT LOGIKA
+   FELIRAT FRISSÍTÉS
 ------------------------------------------------------------ */
-const previewCanvas=document.getElementById("previewCanvas");
-const titleInput=document.getElementById("titleInput");
-const titleText=document.getElementById("titleText");
-const titleSize=document.getElementById("titleSize");
-const titleSizeLabel=document.getElementById("titleSizeLabel");
-
-let titleColor=COLORS[4];   // indulásnak sötét
-
-titleInput.oninput=updateTitle;
-titleSize.oninput=()=>{titleSizeLabel.textContent=titleSize.value+" cm"; updateTitle();}
-document.querySelectorAll("input[name='pos']").forEach(x=>x.onchange=updateTitle);
-
-function updateTitle(){
-  let txt=titleInput.value || "Nándi alkotásai";
-  titleText.textContent=txt;
-
-  let pxPerCm=previewCanvas.offsetHeight/22.5;
-  titleText.style.fontSize=(titleSize.value*pxPerCm)+"px";
-  titleText.style.color=titleColor.hex;
-
-  let pos=document.querySelector("input[name='pos']:checked").value;
-
-  if(pos==="center"){
-    titleText.style.top="50%";
-    titleText.style.transform="translate(-50%, -50%)";
-  }
-  else if(pos==="top"){
-    let px=3*pxPerCm;
-    titleText.style.top=px+"px";
-    titleText.style.transform="translateX(-50%)";
-  }
-  else{
-    let canvasH=previewCanvas.offsetHeight;
-    let px=canvasH-(3*pxPerCm);
-    titleText.style.top=(px-parseFloat(titleText.style.fontSize))+"px";
-    titleText.style.transform="translateX(-50%)";
-  }
+function getPxPerCm() {
+  // belső magasság 22.5 cm-nek feleljen meg
+  return previewCanvas.offsetHeight / 22.5;
 }
 
-buildColorGrid(document.getElementById("titleColorGrid"), c=>{titleColor=c; updateTitle();});
+function updateTitle() {
+  const txt = titleInput.value.trim() || "Nándi alkotásai";
+  titleElement.textContent = txt;
+
+  const pxPerCm = getPxPerCm();
+  const fontPx = titleSize.value * pxPerCm;
+  titleElement.style.fontSize = fontPx + "px";
+  titleElement.style.color = titleColor.hex;
+}
+
+titleInput.addEventListener("input", updateTitle);
+titleSize.addEventListener("input", () => {
+  titleSizeLabel.textContent = titleSize.value + " cm";
+  updateTitle();
+});
+
+/* ------------------------------------------------------------
+   FELIRAT DRAG & DROP
+------------------------------------------------------------ */
+function enableDrag(element, options = {}) {
+  let isDragging = false;
+  let startX, startY, startLeft, startTop;
+
+  element.addEventListener("mousedown", (e) => {
+    // ne induljon, ha pl. input van benne – itt nincs, de biztos ami biztos
+    e.preventDefault();
+    const rect = element.getBoundingClientRect();
+    const canvasRect = previewCanvas.getBoundingClientRect();
+
+    isDragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    // jelenlegi pozíció pixelben
+    startLeft = rect.left - canvasRect.left;
+    startTop  = rect.top  - canvasRect.top;
+
+    element.classList.add("dragging");
+
+    function onMove(ev) {
+      if (!isDragging) return;
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+
+      let newLeft = startLeft + dx;
+      let newTop  = startTop  + dy;
+
+      const elRect = element.getBoundingClientRect();
+      const w = elRect.width;
+      const h = elRect.height;
+      const cW = previewCanvas.clientWidth;
+      const cH = previewCanvas.clientHeight;
+
+      // ne menjen ki a dobozból
+      if (newLeft < 0) newLeft = 0;
+      if (newTop  < 0) newTop  = 0;
+      if (newLeft + w > cW) newLeft = cW - w;
+      if (newTop  + h > cH) newTop  = cH - h;
+
+      element.style.left = newLeft + "px";
+      element.style.top  = newTop  + "px";
+      element.style.transform = "translate(0,0)";
+    }
+
+    function onUp() {
+      isDragging = false;
+      element.classList.remove("dragging");
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    }
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  });
+}
 
 /* ------------------------------------------------------------
    DOBOZ SZÍN
 ------------------------------------------------------------ */
-const boxColorLayer=document.getElementById("boxColorLayer");
-buildColorGrid(document.getElementById("boxColorGrid"), c=>{
-  boxColorLayer.style.background=c.hex;
-});
+buildColorGrid(document.getElementById("boxColorGrid"), c => {
+  boxColorLayer.style.background = c.hex;
+}, 0);
 
 /* ------------------------------------------------------------
-   SVG BETÖLTŐ (csak egyszer töltjük le fájlonként)
+   FELIRAT SZÍN
+------------------------------------------------------------ */
+buildColorGrid(document.getElementById("titleColorGrid"), c => {
+  titleColor = c;
+  updateTitle();
+}, 4);
+
+/* ------------------------------------------------------------
+   MINTÁK SZÍNE – CSOPORTOS
+------------------------------------------------------------ */
+document.querySelectorAll("input[name='decoGroup']").forEach(r => {
+  r.addEventListener("change", () => {
+    decorColorTarget = r.value; // "star" vagy "cloud"
+  });
+});
+
+buildColorGrid(document.getElementById("decorColorGrid"), c => {
+  const col = c.hex;
+  const targets = document.querySelectorAll(`.decor[data-kind='${decorColorTarget}'] svg`);
+  targets.forEach(svg => {
+    svg.querySelectorAll("*").forEach(node => {
+      const tag = node.tagName.toLowerCase();
+      if (tag !== "svg") {
+        node.setAttribute("fill", col);
+        if (node.hasAttribute("stroke")) node.setAttribute("stroke", col);
+      }
+    });
+  });
+}, 11); // pl. sárga mintákhoz
+
+/* ------------------------------------------------------------
+   SVG BETÖLTÉS (GITHUBRÓL IS MEGY)
 ------------------------------------------------------------ */
 const SVG_SOURCES = {
-  star_1: "star_1.svg",
-  star_2: "star_2.svg",
-  cloud_1: "cloud_1.svg",
-  cloud_2: "cloud_2.svg"
+  star_1: "./star_1.svg",
+  star_2: "./star_2.svg",
+  cloud_1: "./cloud_1.svg",
+  cloud_2: "./cloud_2.svg"
 };
 
-const svgCache = {};
-
-async function loadSvg(type){
-  if(svgCache[type]) return svgCache[type];
+async function loadSvg(type) {
+  if (svgCache[type]) return svgCache[type];
   const resp = await fetch(SVG_SOURCES[type]);
   const text = await resp.text();
-  const tmp = document.createElement("div");
-  tmp.innerHTML = text.trim();
-  const svg = tmp.querySelector("svg");
+  const temp = document.createElement("div");
+  temp.innerHTML = text.trim();
+  const svg = temp.querySelector("svg");
   svgCache[type] = svg;
   return svg;
 }
 
 /* ------------------------------------------------------------
-   DEKOROK DRAG & DROP
+   DEKOR LÉTREHOZÁSA ÉS DRAG
 ------------------------------------------------------------ */
-let draggedType=null;
-let activeDecor=null;
-let sizeBubble=document.getElementById("sizeBubble");
-
-document.querySelectorAll(".palette-item").forEach(item=>{
-  item.onmousedown=e=>{
-    draggedType=item.dataset.type;
-  };
-});
-
-previewCanvas.addEventListener("mouseup", async e=>{
-  if(draggedType){
-    await createDecor(draggedType,e.offsetX,e.offsetY);
-    draggedType=null;
-  }
-});
-
-async function createDecor(type,x,y){
+async function createDecor(type, x, y) {
   const baseSvg = await loadSvg(type);
-  const d=document.createElement("div");
-  d.className="decor";
-  d.dataset.kind = type.startsWith("star") ? "star" : "cloud";
-  d.style.left=x+"px";
-  d.style.top=y+"px";
+  const decor = document.createElement("div");
+  decor.className = "decor";
+  decor.dataset.kind = type.startsWith("star") ? "star" : "cloud";
 
-  const svg=baseSvg.cloneNode(true);
-  svg.style.width="80px";
-  svg.style.height="auto";
-  d.appendChild(svg);
+  // pozíció
+  decor.style.left = x + "px";
+  decor.style.top  = y + "px";
 
-  const h=document.createElement("div");
-  h.className="resize-handle";
-  d.appendChild(h);
+  const svg = baseSvg.cloneNode(true);
+  svg.style.width = "80px";
+  svg.style.height = "auto";
 
-  d.onmousedown=selectDecor;
-  h.onmousedown=startResize;
+  decor.appendChild(svg);
 
-  previewCanvas.appendChild(d);
+  const handle = document.createElement("div");
+  handle.className = "resize-handle";
+  decor.appendChild(handle);
+
+  previewCanvas.appendChild(decor);
+
+  enableDecorDrag(decor);
+  enableResize(decor, handle);
+
+  return decor;
 }
 
-function selectDecor(e){
-  if(e.target.classList.contains("resize-handle")) return;
+function enableDecorDrag(decor) {
+  let isDragging = false;
+  let startX, startY, startLeft, startTop;
 
-  document.querySelectorAll(".decor").forEach(d=>{
-    d.classList.remove("selected");
+  decor.addEventListener("mousedown", (e) => {
+    if (e.target.classList.contains("resize-handle")) return; // külön a resize intézi
+    e.preventDefault();
+
+    const rect = decor.getBoundingClientRect();
+    const canvasRect = previewCanvas.getBoundingClientRect();
+
+    isDragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    startLeft = rect.left - canvasRect.left;
+    startTop  = rect.top  - canvasRect.top;
+
+    decor.classList.add("dragging");
+
+    function onMove(ev) {
+      if (!isDragging) return;
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+
+      let newLeft = startLeft + dx;
+      let newTop  = startTop  + dy;
+
+      const elRect = decor.getBoundingClientRect();
+      const w = elRect.width;
+      const h = elRect.height;
+      const cW = previewCanvas.clientWidth;
+      const cH = previewCanvas.clientHeight;
+
+      if (newLeft < 0) newLeft = 0;
+      if (newTop  < 0) newTop  = 0;
+      if (newLeft + w > cW) newLeft = cW - w;
+      if (newTop  + h > cH) newTop  = cH - h;
+
+      decor.style.left = newLeft + "px";
+      decor.style.top  = newTop  + "px";
+    }
+
+    function onUp() {
+      isDragging = false;
+      decor.classList.remove("dragging");
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    }
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
   });
-
-  activeDecor=e.currentTarget;
-  activeDecor.classList.add("selected");
-
-  const handle = activeDecor.querySelector(".resize-handle");
-  if(handle) handle.style.display="block";
-
-  const rect = activeDecor.getBoundingClientRect();
-  const canvasRect = previewCanvas.getBoundingClientRect();
-  const offsetX=e.pageX-rect.left;
-  const offsetY=e.pageY-rect.top;
-
-  function move(ev){
-    activeDecor.style.left=(ev.pageX-canvasRect.left-offsetX)+"px";
-    activeDecor.style.top=(ev.pageY-canvasRect.top-offsetY)+"px";
-  }
-  function stop(){
-    const hndl = activeDecor.querySelector(".resize-handle");
-    if(hndl) hndl.style.display="none";
-    window.removeEventListener("mousemove",move);
-    window.removeEventListener("mouseup",stop);
-  }
-  window.addEventListener("mousemove",move);
-  window.addEventListener("mouseup",stop);
-}
-
-function startResize(e){
-  e.stopPropagation();
-  if(!activeDecor) activeDecor = e.currentTarget.parentElement;
-  const svg=activeDecor.querySelector("svg");
-  const handle=activeDecor.querySelector(".resize-handle");
-  if(handle) handle.style.display="block";
-
-  const startX=e.pageX;
-  const startW=svg.getBoundingClientRect().width;
-  const pxPerCm=previewCanvas.offsetHeight/22.5;
-
-  function resize(ev){
-    const diff=ev.pageX-startX;
-    let newW=startW+diff;
-    if(newW<20) newW=20;
-    svg.style.width=newW+"px";
-
-    const cm=(newW/pxPerCm).toFixed(1);
-    sizeBubble.textContent=cm+" cm";
-    sizeBubble.style.left=(ev.pageX+15)+"px";
-    sizeBubble.style.top=ev.pageY+"px";
-    sizeBubble.style.display="block";
-  }
-
-  function stop(){
-    sizeBubble.style.display="none";
-    if(handle) handle.style.display="none";
-    window.removeEventListener("mousemove",resize);
-    window.removeEventListener("mouseup",stop);
-  }
-
-  window.addEventListener("mousemove",resize);
-  window.addEventListener("mouseup",stop);
 }
 
 /* ------------------------------------------------------------
-   MINTÁK SZÍNE – CSOPORTOS
+   MÉRETEZÉS – ARÁNYOS
 ------------------------------------------------------------ */
-let decorColorTarget="star";
-document.querySelectorAll("input[name='decoGroup']").forEach(r=>{
-  r.onchange=()=>{decorColorTarget=r.value;};
-});
+function enableResize(decor, handle) {
+  const svg = decor.querySelector("svg");
 
-buildColorGrid(document.getElementById("decorColorGrid"), c=>{
-  const col=c.hex;
-  document.querySelectorAll(`.decor[data-kind='${decorColorTarget}'] svg`).forEach(svg=>{
-    svg.querySelectorAll("*").forEach(node=>{
-      if(node.tagName.toLowerCase() !== "svg"){
-        node.setAttribute("fill", col);
-        if(node.hasAttribute("stroke")) node.setAttribute("stroke", col);
-      }
-    });
+  handle.addEventListener("mousedown", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const startX = e.clientX;
+    const rect = svg.getBoundingClientRect();
+    const startW = rect.width;
+    const pxPerCm = getPxPerCm();
+
+    handle.style.display = "block";
+
+    function onMove(ev) {
+      const dx = ev.clientX - startX;
+      let newW = startW + dx;
+      if (newW < 15) newW = 15;
+
+      svg.style.width = newW + "px";
+
+      const cm = (newW / pxPerCm).toFixed(1);
+      sizeBubble.textContent = cm + " cm";
+      sizeBubble.style.left = (ev.clientX + 12) + "px";
+      sizeBubble.style.top  = (ev.clientY - 10) + "px";
+      sizeBubble.style.display = "block";
+    }
+
+    function onUp() {
+      sizeBubble.style.display = "none";
+      handle.style.display = "none";
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    }
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  });
+}
+
+/* ------------------------------------------------------------
+   PALETTA → AZONNALI HÚZÁS A DOBOZRA
+------------------------------------------------------------ */
+document.querySelectorAll(".palette-item").forEach(item => {
+  item.addEventListener("mousedown", async (e) => {
+    e.preventDefault();
+    const type = item.dataset.type;
+    const canvasRect = previewCanvas.getBoundingClientRect();
+    const startX = e.clientX - canvasRect.left;
+    const startY = e.clientY - canvasRect.top;
+
+    // ha teljesen mellé kattint, ne hozzon létre
+    if (startX < 0 || startY < 0 ||
+        startX > canvasRect.width || startY > canvasRect.height) {
+      return;
+    }
+
+    const decor = await createDecor(type, startX, startY);
+
+    // azonnali drag, mintha a palettáról húznád
+    let isDragging = true;
+    const rect = decor.getBoundingClientRect();
+    let dragOffsetX = e.clientX - rect.left;
+    let dragOffsetY = e.clientY - rect.top;
+    decor.classList.add("dragging");
+
+    function onMove(ev) {
+      if (!isDragging) return;
+      const cRect = previewCanvas.getBoundingClientRect();
+      let newLeft = ev.clientX - cRect.left - dragOffsetX;
+      let newTop  = ev.clientY - cRect.top  - dragOffsetY;
+
+      const dRect = decor.getBoundingClientRect();
+      const w = dRect.width;
+      const h = dRect.height;
+      const cW = previewCanvas.clientWidth;
+      const cH = previewCanvas.clientHeight;
+
+      if (newLeft < 0) newLeft = 0;
+      if (newTop  < 0) newTop  = 0;
+      if (newLeft + w > cW) newLeft = cW - w;
+      if (newTop  + h > cH) newTop  = cH - h;
+
+      decor.style.left = newLeft + "px";
+      decor.style.top  = newTop + "px";
+    }
+
+    function onUp() {
+      isDragging = false;
+      decor.classList.remove("dragging");
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    }
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
   });
 });
 
 /* ------------------------------------------------------------
-   PNG MENTÉS – html2canvas
+   PNG MENTÉS
 ------------------------------------------------------------ */
-document.getElementById("saveImgBtn").onclick = () => {
+document.getElementById("saveImgBtn").addEventListener("click", () => {
   html2canvas(previewCanvas, {
     useCORS: true,
     backgroundColor: null
@@ -515,14 +702,18 @@ document.getElementById("saveImgBtn").onclick = () => {
     link.href = canvas.toDataURL("image/png");
     link.click();
   }).catch(err => {
-    alert("Ha üres képet kapsz, futtasd az oldalt webszerverről (pl. feltöltve a tárhelyre, vagy VS Code Live Serverrel).");
+    alert("Ha valamiért üres képet kapsz, próbáld újratölteni az oldalt (Ctrl+F5).");
     console.error(err);
   });
-};
+});
 
+/* ------------------------------------------------------------
+   INDULÁSKOR
+------------------------------------------------------------ */
+enableDrag(titleElement);
 updateTitle();
 
 </script>
-
 </body>
 </html>
+
