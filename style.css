@@ -1,0 +1,293 @@
+
+/* Alap */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #f3f3f3;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Betűtípus */
+
+@font-face {
+  font-family: "AlwaysInMyHeart";
+  src: url("AlwaysInMyHeart.ttf") format("truetype");
+  font-display: swap;
+}
+
+/* Fő layout */
+
+#app {
+  display: flex;
+  height: 100vh;
+}
+
+/* Sidebar */
+
+.sidebar {
+  width: 320px;
+  min-width: 320px;
+  max-width: 340px;
+  padding: 16px 18px;
+  border-right: 1px solid #ddd;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.app-title {
+  font-size: 20px;
+  margin: 0 0 4px;
+}
+
+.panel-section {
+  padding: 12px 10px;
+  border-radius: 0;
+  background: #fafafa;
+  border: 1px solid #e3e3e3;
+  margin-bottom: 8px;
+}
+
+.panel-section h2 {
+  font-size: 15px;
+  margin: 0 0 10px;
+}
+
+.field-label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+#title-input {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 0;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+#title-size {
+  width: 80px;
+  padding: 4px 6px;
+  border-radius: 0;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+.field-unit {
+  font-size: 13px;
+  color: #555;
+}
+
+/* Mintagombok */
+
+.pattern-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.pattern-btn {
+  border: 1px solid #ddd;
+  border-radius: 0;
+  background: #fff;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pattern-btn img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+/* Színpaletták */
+
+.palette-block {
+  margin-top: 8px;
+}
+
+.palette-title {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.color-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #bbb;
+  cursor: pointer;
+}
+
+.color-swatch.selected {
+  outline: 2px solid #000;
+}
+
+/* Gomb */
+
+.primary-btn {
+  width: 100%;
+  padding: 8px 10px;
+  margin-top: 10px;
+  border-radius: 0;
+  border: none;
+  background: #232324;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.primary-btn:hover {
+  opacity: 0.9;
+}
+
+/* Munkaterület */
+
+.workspace {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 18px;
+  overflow: auto;
+}
+
+.workspace-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#box-wrapper {
+  max-width: calc(100% - 40px);
+  max-height: calc(100% - 40px);
+}
+
+/* A4 doboz */
+
+#box {
+  position: relative;
+  width: min(70vw, 900px);
+  aspect-ratio: 310 / 225;
+  margin: 0 auto;
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+
+  background-image: url("assets/textures/wood.png");
+  background-size: cover;
+  background-position: center;
+}
+
+/* Rétegek sorrendje */
+
+#box-tint-layer {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 1;
+}
+
+#patterns-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  z-index: 2;
+}
+
+#title-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none; /* csak a szöveg fogható */
+  z-index: 3;
+}
+
+/* Felirat */
+
+#title-text {
+  font-family: "AlwaysInMyHeart", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #232324;
+  white-space: nowrap;
+  line-height: 1;
+  pointer-events: auto;
+  cursor: grab;
+}
+
+/* Minták a dobozon */
+
+.pattern {
+  position: absolute;
+  cursor: move;
+  outline: 1px dashed transparent;
+}
+
+.pattern.active {
+  outline-color: #555;
+}
+
+.pattern svg {
+  width: 100%;
+  height: 100%;
+}
+
+.pattern .resize-handle {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 0;
+  border: 2px solid #232324;
+  background: #ffffff;
+  cursor: se-resize;
+}
+
+/* Reszponzív */
+
+@media (max-width: 900px) {
+  .sidebar {
+    width: 280px;
+    min-width: 280px;
+  }
+
+  #box {
+    width: min(65vw, 720px);
+  }
+}
