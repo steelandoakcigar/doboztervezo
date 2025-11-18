@@ -1,66 +1,86 @@
-
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-    <meta charset="UTF-8">
-    <title>Doboztervező A4</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        @font-face {
-            font-family: 'AlwaysInMyHeart';
-            src: url('AlwaysInMyHeart.ttf') format('truetype');
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Doboztervező – A4</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-
-<div id="container">
-
-    <div id="canvas-wrapper">
-        <div id="board">
-            <img id="woodTexture" src="assets/textures/wood.png" alt="">
-            <div id="boardColorOverlay"></div>
-
-            <!-- Ide kerül minden (felirat + minták) -->
-            <div id="designArea">
-                <div id="textElement" class="draggable">Felirat</div>
-            </div>
-        </div>
+  <div class="app">
+    <div class="preview">
+      <canvas id="designCanvas" width="900" height="1273"></canvas>
+      <!-- 900×1273 kb. A4 arány (21:29.7) -->
     </div>
 
-    <div id="sidebar">
-        <h3>Felirat</h3>
-        <input id="textInput" type="text" placeholder="Pl. Nándi kincsei">
-        <label for="textSize">Méret (cm)</label>
-        <input id="textSize" type="range" min="2.5" max="10" step="0.1" value="4">
+    <div class="sidebar">
+      <section class="panel">
+        <h2>Felirat</h2>
+        <label class="field">
+          Szöveg
+          <input id="titleInput" type="text" placeholder="Pl. Nándi kincsei" />
+        </label>
 
-        <h4>Felirat színe</h4>
-        <div class="color-row" id="textColors"></div>
+        <label class="field slider-field">
+          Méret (cm):
+          <span id="titleSizeLabel">4.0</span>
+          <input
+            id="titleSize"
+            type="range"
+            min="2.5"
+            max="7"
+            step="0.1"
+            value="4"
+          />
+        </label>
 
-        <h3>Minták (fogd és húzd a dobozra)</h3>
-        <div id="icons">
-            <img class="icon" src="icons/star_1.svg" draggable="true" alt="">
-            <img class="icon" src="icons/star_2.svg" draggable="true" alt="">
-            <img class="icon" src="icons/cloud_1.svg" draggable="true" alt="">
-            <img class="icon" src="icons/cloud_2.svg" draggable="true" alt="">
+        <div class="field">
+          <div class="field-label">Felirat színe</div>
+          <div id="titleColors" class="color-row"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Minták (fogd és húzd a dobozra)</h2>
+        <div id="patternPalette" class="pattern-palette">
+          <div class="pattern-icon" data-type="star_1">
+            <img src="icons/star_1.svg" alt="Csillag 1" />
+          </div>
+          <div class="pattern-icon" data-type="star_2">
+            <img src="icons/star_2.svg" alt="Csillag 2" />
+          </div>
+          <div class="pattern-icon" data-type="cloud_1">
+            <img src="icons/cloud_1.svg" alt="Felhő 1" />
+          </div>
+          <div class="pattern-icon" data-type="cloud_2">
+            <img src="icons/cloud_2.svg" alt="Felhő 2" />
+          </div>
         </div>
 
-        <h3>Minták színe</h3>
-        <label for="groupSelect">Csoport</label>
-        <select id="groupSelect">
-            <option value="stars">Csillagok</option>
-            <option value="clouds">Felhők</option>
-        </select>
-        <div class="color-row" id="patternColors"></div>
+        <div class="field">
+          <label>
+            Csoport:
+            <select id="patternGroup">
+              <option value="stars">Csillagok</option>
+              <option value="clouds">Felhők</option>
+            </select>
+          </label>
+        </div>
 
-        <h3>Doboz színe</h3>
-        <div class="color-row" id="boardColors"></div>
+        <div class="field">
+          <div class="field-label">Minták színe</div>
+          <div id="patternColors" class="color-row"></div>
+        </div>
+      </section>
 
-        <button id="saveBtn">Kép mentése (PNG)</button>
+      <section class="panel">
+        <h2>Doboz színe</h2>
+        <div id="boxColors" class="color-row"></div>
+      </section>
+
+      <button id="saveBtn" class="save-btn">Kép mentése (PNG)</button>
     </div>
+  </div>
 
-</div>
-
-<script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

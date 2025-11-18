@@ -1,171 +1,145 @@
-// ----------- ALAP BEÁLLÍTÁSOK -------------
 
-const colors = ["#ffffff", "#e9d7b0", "#ffbcd1", "#000000"];
+// --- Alap konstansek -------------------------------------------------
 
-const textElement = document.getElementById("textElement");
-const textInput   = document.getElementById("textInput");
-const textSize    = document.getElementById("textSize");
-const boardColorOverlay = document.getElementById("boardColorOverlay");
-const designArea  = document.getElementById("designArea");
-const groupSelect = document.getElementById("groupSelect");
+const CM_MIN = 2.5;
+const CM_MAX = 7;
+const PX_PER_CM = 37.8; // kb. 96 DPI-n
 
-// aktuális minta-színek
-let starColor  = "#e9d7b0";
-let cloudColor = "#e9d7b0";
+// A4 arány – a vászon közepén
+const canvas = document.getElementById("designCanvas");
+const ctx = canvas.getContext("2d");
 
+// Belső doboz (A4) margóval
+const BOX = {
+  x: 100,
+  y: 70,
+  width: canvas.width - 200,
+  height: canvas.height - 140,
+};
 
-// ----------- SZÍNVÁLASZTÓK FELTÖLTÉSE -------------
+// Pinty Plus Home színpaletta (becsült HEX-ek)
+const COLORS = [
+  { id: "01", name: "Natúr fehér", hex: "#e5e3dc" },
+  { id: "02", name: "Kék-szürke", hex: "#6f7f98" },
+  { id: "03", name: "Türkiz kék", hex: "#0f96a0" },
+  { id: "04", name: "Antik kék", hex: "#004f8c" },
+  { id: "05", name: "Natúr fekete", hex: "#111111" },
+  { id: "06", name: "Gesztenyebarna", hex: "#7a5240" },
+  { id: "07", name: "Homok barna", hex: "#c9b79a" },
+  { id: "08", name: "Olívazöld", hex: "#7a774a" },
+  { id: "09", name: "Vintage zöld", hex: "#97a892" },
+  { id: "10", name: "Katonazöld", hex: "#3c6b3f" },
+  { id: "11", name: "Zöldalma", hex: "#77b95a" },
+  { id: "12", name: "Mustársárga", hex: "#cda434" },
+  { id: "13", name: "Antik rózsaszín", hex: "#c38282" },
+  { id: "14", name: "Levendula", hex: "#8a6fae" },
+];
 
-function fillColorRow(id, onPick) {
-    const row = document.getElementById(id);
-    row.innerHTML = "";
-    colors.forEach(col => {
-        const swatch = document.createElement("div");
-        swatch.style.background = col;
-        swatch.addEventListener("click", () => onPick(col));
-        row.appendChild(swatch);
-    });
+// --- Állapot ----------------------------------------------------------
+
+const woodImage = new Image();
+woodImage.src = "assets/textures/wood.png";
+
+const iconSources = {
+  star_1: "icons/star_1.svg",
+  star_2: "icons/star_2.svg",
+  cloud_1: "icons/cloud_1.svg",
+  cloud_2: "icons/cloud_2.svg",
+};
+
+const iconImages = {};
+let assetsLoaded = false;
+
+const decorations = []; // {type, group, x, y, scale, color, tintedCanvas}
+
+let title = {
+  text: "Nándi kincsei",
+  sizeCm: 4,
+  x: BOX.x + BOX.width / 2,
+  y: BOX.y + BOX.height * 0.18,
+  color: "#111111",
+};
+
+let currentBoxColor = COLORS[0].hex;
+let currentPatternColor = COLORS[6].hex; // pl. homok barna
+let currentPatternGroup = "stars";
+
+let dragState = null; // {type: 'title-move' | 'dec-move' | 'dec-resize', index, offsetX, offsetY}
+
+// --- DOM elemek ------------------------------------------------------
+
+const titleInput = document.getElementById("titleInput");
+const titleSizeInput = document.getElementById("titleSize");
+const titleSizeLabel = document.getElementById("titleSizeLabel");
+
+const titleColorsContainer = document.getElementById("titleColors");
+const patternColorsContainer = document.getElementById("patternColors");
+const boxColorsContainer = document.getElementById("boxColors");
+
+const patternPalette = document.getElementById("patternPalette");
+const patternGroupSelect = document.getElementById("patternGroup");
+const saveBtn = document.getElementById("saveBtn");
+
+// --- Segédfüggvények -------------------------------------------------
+
+function hexToRgb(hex) {
+  const clean = hex.replace("#", "");
+  const bigint = parseInt(clean, 16);
+  return {
+    r: (bigint >> 16) & 255,
+    g: (bigint >> 8) & 255,
+    b: bigint & 255,
+  };
 }
 
-// felirat színek
-fillColorRow("textColors", col => {
-    textElement.style.color = col;
-});
+function createTintedCanvas(img, colorHex) {
+  const c = document.createElement("canvas");
+  c.width = img.naturalWidth;
+  c.height = img.naturalHeight;
+  const cctx = c.getContext("2d");
+  cctx.drawImage(img, 0, 0);
 
-// doboz színek
-fillColorRow("boardColors", col => {
-    boardColorOverlay.style.background = col;
-});
+  const imgData = cctx.getImageData(0, 0, c.width, c.height);
+  const data = imgData.data;
+  const rgb = hexToRgb(colorHex);
 
-// minták színek – csoportosan
-fillColorRow("patternColors", col => {
-    const group = groupSelect.value;
-    if (group === "stars") {
-        starColor = col;
-    } else {
-        cloudColor = col;
-    }
-    recolorPatterns();
-});
+  for (let i = 0; i < data.length; i += 4) {
+    const alpha = data[i + 3];
+    if (alpha === 0) continue;
+    data[i] = rgb.r;
+    data[i + 1] = rgb.g;
+    data[i + 2] = rgb.b;
+  }
 
-
-// ----------- FELIRAT KEZELÉS -------------
-
-textInput.addEventListener("input", e => {
-    textElement.textContent = e.target.value || "Felirat";
-});
-
-textSize.addEventListener("input", e => {
-    const cm = parseFloat(e.target.value);
-    textElement.style.fontSize = cm + "cm";
-});
-
-// kezdeti érték
-textInput.value = "Nándi kincsei";
-textInput.dispatchEvent(new Event("input"));
-
-
-// ----------- DRAGGELHETŐ ELEMEK (FELIRAT + MINTÁK) -------------
-
-function makeDraggable(el) {
-    el.addEventListener("mousedown", e => {
-        e.preventDefault();
-        let startX = e.clientX;
-        let startY = e.clientY;
-        const rect = el.getBoundingClientRect();
-        const parentRect = designArea.getBoundingClientRect();
-        let offsetX = rect.left - parentRect.left;
-        let offsetY = rect.top - parentRect.top;
-
-        function onMove(ev) {
-            const dx = ev.clientX - startX;
-            const dy = ev.clientY - startY;
-            el.style.left = (offsetX + dx) + "px";
-            el.style.top  = (offsetY + dy) + "px";
-        }
-
-        function onUp() {
-            document.removeEventListener("mousemove", onMove);
-            document.removeEventListener("mouseup", onUp);
-        }
-
-        document.addEventListener("mousemove", onMove);
-        document.addEventListener("mouseup", onUp);
-    });
+  cctx.putImageData(imgData, 0, 0);
+  return c;
 }
 
-makeDraggable(textElement);
-
-
-// ----------- MINTÁK DRAG & DROP -------------
-
-// ikonról induló drag
-document.querySelectorAll(".icon").forEach(icon => {
-    icon.addEventListener("dragstart", e => {
-        e.dataTransfer.setData("src", e.target.src);
-    });
-});
-
-// dobozra húzás
-designArea.addEventListener("dragover", e => e.preventDefault());
-
-designArea.addEventListener("drop", e => {
-    e.preventDefault();
-    const src = e.dataTransfer.getData("src");
-    if (!src) return;
-
-    const isStar  = src.includes("star");
-    const isCloud = src.includes("cloud");
-
-    const item = document.createElement("div");
-    item.classList.add("pattern-item");
-    if (isStar)  item.classList.add("star");
-    if (isCloud) item.classList.add("cloud");
-
-    // maszk beállítása
-    item.style.webkitMaskImage = `url(${src})`;
-    item.style.maskImage       = `url(${src})`;
-
-    // kezdő szín
-    item.style.backgroundColor = isStar ? starColor : cloudColor;
-
-    // hely a drop pontján
-    const areaRect = designArea.getBoundingClientRect();
-    item.style.left = (e.clientX - areaRect.left - 40) + "px";
-    item.style.top  = (e.clientY - areaRect.top  - 40) + "px";
-
-    makeDraggable(item);
-    designArea.appendChild(item);
-});
-
-
-// minta-színek frissítése, ha változik a paletta
-function recolorPatterns() {
-    document.querySelectorAll(".pattern-item.star").forEach(el => {
-        el.style.backgroundColor = starColor;
-    });
-    document.querySelectorAll(".pattern-item.cloud").forEach(el => {
-        el.style.backgroundColor = cloudColor;
-    });
+function cmToPx(cm) {
+  return cm * PX_PER_CM;
 }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
 
-// ----------- PNG MENTÉS -------------
+function pointInRect(x, y, rect) {
+  return (
+    x >= rect.x &&
+    x <= rect.x + rect.width &&
+    y >= rect.y &&
+    y <= rect.y + rect.height
+  );
+}
 
-// html2canvas kell hozzá – CDN-ről:
-const script = document.createElement("script");
-script.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
-document.head.appendChild(script);
+// --- Szín gombok generálása -----------------------------------------
 
-document.getElementById("saveBtn").addEventListener("click", () => {
-    if (typeof html2canvas === "undefined") {
-        alert("Várj egy pillanatot, míg betölt a mentéshez szükséges könyvtár.");
-        return;
-    }
-    html2canvas(document.getElementById("board")).then(canvas => {
-        const link = document.createElement("a");
-        link.download = "doboz.png";
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-    });
-});
+function createColorSwatches(container, onClick, initialHex) {
+  container.innerHTML = "";
+  COLORS.forEach((c) => {
+    const btn = document.createElement("button");
+    btn.className = "color-swatch";
+    btn.style.backgroundColor = c.hex;
+    btn.dataset.hex = c.hex;
+    btn.title = `${c.id}: ${c.name}`;
+    if (c.hex === initialHex) btn.classList.add("active

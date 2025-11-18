@@ -1,119 +1,148 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
-    margin: 0;
-    background: #fafafa;
-    font-family: Arial, sans-serif;
-    display: flex;
-    justify-content: center;
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background: #f2f2f5;
+  color: #222;
 }
 
-#container {
-    display: flex;
-    width: 100%;
-    max-width: 1500px;
+.app {
+  display: flex;
+  min-height: 100vh;
+  padding: 16px;
+  gap: 16px;
 }
 
-#canvas-wrapper {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    padding: 20px;
+.preview {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top, #ffffff, #e3e3e9);
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+  padding: 24px;
 }
 
-/* A4 álló doboz */
-#board {
-    position: relative;
-    width: 990px;
-    height: 700px;        /* arány: 210×297 mm */
-    overflow: hidden;
-    border: 1px solid #ddd;
-    background: #eee;
+#designCanvas {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
 }
 
-/* Fa textúra */
-#woodTexture {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.sidebar {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-/* Színező réteg – alatta látszik a fa */
-#boardColorOverlay {
-    position: absolute;
-    inset: 0;
-    background: #ffffff;
-    opacity: 0.35;        /* halvány, hogy a fa látszódjon */
-    pointer-events: none;
+.panel {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
 
-/* Ide kerül másolva minden, amit a user csinál */
-#designArea {
-    position: absolute;
-    inset: 0;
+.panel h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
 }
 
-/* Felirat */
-#textElement {
-    position: absolute;
-    top: 150px;
-    left: 120px;
-    font-size: 4cm;
-    font-family: "AlwaysInMyHeart";
-    color: #000000;
-    cursor: grab;
-    user-select: none;
+.field {
+  margin-bottom: 10px;
+  font-size: 13px;
 }
 
-/* Oldalsó panel */
-#sidebar {
-    width: 380px;
-    padding: 20px;
-    box-sizing: border-box;
+.field-label {
+  margin-bottom: 4px;
+}
+
+.field input[type="text"] {
+  width: 100%;
+  margin-top: 4px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+.slider-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slider-field span {
+  width: 40px;
+  text-align: right;
+}
+
+.slider-field input[type="range"] {
+  flex: 1;
 }
 
 .color-row {
-    display: flex;
-    flex-wrap: wrap;
-    margin-bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
 }
 
-.color-row div {
-    width: 30px;
-    height: 30px;
-    margin: 4px;
-    border-radius: 5px;
-    cursor: pointer;
-    border: 1px solid #ccc;
+.color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  padding: 0;
 }
 
-/* Minták előnézete */
-#icons {
-    display: flex;
-    flex-wrap: wrap;
-    margin-bottom: 10px;
+.color-swatch.active {
+  outline: 2px solid #000;
 }
 
-.icon {
-    width: 50px;
-    margin: 4px;
-    cursor: grab;
+.pattern-palette {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
-/* Dobozra dobott minták */
-.pattern-item {
-    position: absolute;
-    width: 80px;
-    height: 80px;
-    cursor: grab;
-    user-select: none;
+.pattern-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #f5f5f8;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+}
 
-    /* a SVG maszkot kapja, a szín a background-color */
-    background-color: #f3e2c5;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    mask-position: center;
-    -webkit-mask-size: contain;
-    mask-size: contain;
+.pattern-icon img {
+  width: 28px;
+  height: 28px;
+}
+
+.save-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: none;
+  background: #111827;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.save-btn:hover {
+  background: #020617;
 }
