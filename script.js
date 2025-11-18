@@ -1,145 +1,374 @@
+/*****************************************************************
+ * EMLÉKDOBOZ TERVEZŐ – V3
+ * - 3–7 cm feliratmagasság
+ * - Felirat drag & drop (szöveg fogható)
+ * - Minták: saját SVG fájlokból, drag + resize
+ * - PintyPlus színpaletták (felirat + minta + doboz árnyalat)
+ * - PNG export (html2canvas, 2×)
+ *****************************************************************/
 
-// --- Alap konstansek -------------------------------------------------
-
-const CM_MIN = 2.5;
-const CM_MAX = 7;
-const PX_PER_CM = 37.8; // kb. 96 DPI-n
-
-// A4 arány – a vászon közepén
-const canvas = document.getElementById("designCanvas");
-const ctx = canvas.getContext("2d");
-
-// Belső doboz (A4) margóval
-const BOX = {
-  x: 100,
-  y: 70,
-  width: canvas.width - 200,
-  height: canvas.height - 140,
-};
-
-// Pinty Plus Home színpaletta (becsült HEX-ek)
 const COLORS = [
-  { id: "01", name: "Natúr fehér", hex: "#e5e3dc" },
-  { id: "02", name: "Kék-szürke", hex: "#6f7f98" },
-  { id: "03", name: "Türkiz kék", hex: "#0f96a0" },
-  { id: "04", name: "Antik kék", hex: "#004f8c" },
-  { id: "05", name: "Natúr fekete", hex: "#111111" },
-  { id: "06", name: "Gesztenyebarna", hex: "#7a5240" },
-  { id: "07", name: "Homok barna", hex: "#c9b79a" },
-  { id: "08", name: "Olívazöld", hex: "#7a774a" },
-  { id: "09", name: "Vintage zöld", hex: "#97a892" },
-  { id: "10", name: "Katonazöld", hex: "#3c6b3f" },
-  { id: "11", name: "Zöldalma", hex: "#77b95a" },
-  { id: "12", name: "Mustársárga", hex: "#cda434" },
-  { id: "13", name: "Antik rózsaszín", hex: "#c38282" },
-  { id: "14", name: "Levendula", hex: "#8a6fae" },
+  "#e6e3dd", "#6e849b", "#0f94a0", "#0f4e8a",
+  "#232324", "#7b5a48", "#c6b49a", "#72653b",
+  "#9aad8d", "#3b6f3f", "#76b46a", "#c8a229",
+  "#c57e86", "#8e6db3"
 ];
 
-// --- Állapot ----------------------------------------------------------
+const MIN_PATTERN = 80;
+const MAX_PATTERN = 300;
 
-const woodImage = new Image();
-woodImage.src = "assets/textures/wood.png";
+let currentTitleColor   = COLORS[4];
+let currentPatternColor = COLORS[5];
+let currentBoxTint      = null;
 
-const iconSources = {
-  star_1: "icons/star_1.svg",
-  star_2: "icons/star_2.svg",
-  cloud_1: "icons/cloud_1.svg",
-  cloud_2: "icons/cloud_2.svg",
-};
+let activePattern = null;
+let patternDrag   = null;
+let patternResize = null;
 
-const iconImages = {};
-let assetsLoaded = false;
+/*****************************************************************
+ * INIT
+ *****************************************************************/
+document.addEventListener("DOMContentLoaded", () => {
+  initPalettes();
+  initTitle();
+  initPatterns();
+  initExport();
+});
 
-const decorations = []; // {type, group, x, y, scale, color, tintedCanvas}
+/*****************************************************************
+ * SZÍNPALETTÁK
+ *****************************************************************/
+function initPalettes() {
+  const titlePal   = document.getElementById("title-palette");
+  const patternPal = document.getElementById("pattern-palette");
+  const boxPal     = document.getElementById("box-palette");
 
-let title = {
-  text: "Nándi kincsei",
-  sizeCm: 4,
-  x: BOX.x + BOX.width / 2,
-  y: BOX.y + BOX.height * 0.18,
-  color: "#111111",
-};
+  COLORS.forEach(color => {
+    // felirat
+    const t = makeSwatch(color, () => {
+      currentTitleColor = color;
+      document.getElementById("title-text").style.color = color;
+    });
+    titlePal.appendChild(t);
 
-let currentBoxColor = COLORS[0].hex;
-let currentPatternColor = COLORS[6].hex; // pl. homok barna
-let currentPatternGroup = "stars";
+    // minták
+    const p = makeSwatch(color, () => {
+      currentPatternColor = color;
+      if (activePattern) applyPatternColor(activePattern, color);
+    });
+    patternPal.appendChild(p);
 
-let dragState = null; // {type: 'title-move' | 'dec-move' | 'dec-resize', index, offsetX, offsetY}
+    // doboz
+    const b = makeSwatch(color, () => {
+      currentBoxTint = color;
+      document.getElementById("box-tint-layer").style.background = hexToRgba(color, 0.45);
+    });
+    boxPal.appendChild(b);
+  });
 
-// --- DOM elemek ------------------------------------------------------
+  // alap feliratszín
+  document.getElementById("title-text").style.color = currentTitleColor;
+}
 
-const titleInput = document.getElementById("titleInput");
-const titleSizeInput = document.getElementById("titleSize");
-const titleSizeLabel = document.getElementById("titleSizeLabel");
+function makeSwatch(color, onClick) {
+  const div = document.createElement("div");
+  div.className = "color-swatch";
+  div.style.backgroundColor = color;
+  div.addEventListener("click", onClick);
+  return div;
+}
 
-const titleColorsContainer = document.getElementById("titleColors");
-const patternColorsContainer = document.getElementById("patternColors");
-const boxColorsContainer = document.getElementById("boxColors");
+function hexToRgba(hex, alpha) {
+  let c = hex.replace("#", "");
+  if (c.length === 3) c = c.split("").map(x => x + x).join("");
+  const n = parseInt(c, 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
-const patternPalette = document.getElementById("patternPalette");
-const patternGroupSelect = document.getElementById("patternGroup");
-const saveBtn = document.getElementById("saveBtn");
+/*****************************************************************
+ * FELIRAT – SZÖVEG, MÉRET, DRAG
+ *****************************************************************/
+function initTitle() {
+  const input = document.getElementById("title-input");
+  const size  = document.getElementById("title-size");
+  const text  = document.getElementById("title-text");
+  const layer = document.getElementById("title-layer");
 
-// --- Segédfüggvények -------------------------------------------------
+  // szöveg
+  input.addEventListener("input", () => {
+    text.textContent = input.value || "Felirat";
+  });
 
-function hexToRgb(hex) {
-  const clean = hex.replace("#", "");
-  const bigint = parseInt(clean, 16);
-  return {
-    r: (bigint >> 16) & 255,
-    g: (bigint >> 8) & 255,
-    b: bigint & 255,
+  // magasság 3–7 cm
+  size.addEventListener("input", () => {
+    let cm = parseFloat(size.value);
+    if (isNaN(cm)) cm = 4;
+    if (cm < 3) cm = 3;
+    if (cm > 7) cm = 7;
+    size.value = cm;
+
+    const BOX_CM_HEIGHT = 22.5;                  // 225 mm = 22,5 cm
+    const box = document.getElementById("box");
+    const boxPxHeight = box.getBoundingClientRect().height;
+
+    const pxPerCm = boxPxHeight / BOX_CM_HEIGHT;
+    const desiredPx = cm * pxPerCm;
+
+    const FONT_CAP_RATIO = 0.7;
+    const fontSizePx = desiredPx / FONT_CAP_RATIO;
+
+    text.style.fontSize = `${fontSizePx}px`;
+  });
+  size.dispatchEvent(new Event("input"));
+
+  // drag – csak a szöveg fogható
+  let dragState = null;
+
+  text.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+
+    const matrix = new DOMMatrix(getComputedStyle(layer).transform);
+    dragState = {
+      startX: e.clientX,
+      startY: e.clientY,
+      baseX: matrix.m41,
+      baseY: matrix.m42
+    };
+    text.style.cursor = "grabbing";
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!dragState) return;
+    const dx = e.clientX - dragState.startX;
+    const dy = e.clientY - dragState.startY;
+    const x = dragState.baseX + dx;
+    const y = dragState.baseY + dy;
+    layer.style.transform = `translate(${x}px, ${y}px)`;
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (!dragState) return;
+    dragState = null;
+    text.style.cursor = "grab";
+  });
+}
+
+/*****************************************************************
+ * MINTÁK – SAJÁT SVG-K, DRAG, RESIZE
+ *****************************************************************/
+function initPatterns() {
+  // Gombok: a bennük lévő <img> src-jét használjuk
+  document.querySelectorAll(".pattern-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const img = btn.querySelector("img");
+      if (!img) return;
+
+      try {
+        const svgText = await loadSvgAsText(img.src);
+        addPatternFromSvg(svgText);
+      } catch (err) {
+        console.error("SVG betöltési hiba:", err);
+        alert("Nem sikerült betölteni a minta SVG-t. Futtasd a projektet helyi szerverről (http://localhost...), ne közvetlenül fájlból.");
+      }
+    });
+  });
+
+  const layer = document.getElementById("patterns-layer");
+
+  // Egyetlen mousedown handler – vagy drag, vagy resize indul
+  layer.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+
+    const pattern = e.target.closest(".pattern");
+    if (!pattern) return;
+
+    setActivePattern(pattern);
+
+    if (e.target.classList.contains("resize-handle")) {
+      startPatternResize(e, pattern);
+    } else {
+      startPatternDrag(e, pattern);
+    }
+
+    e.preventDefault();
+  });
+
+  document.addEventListener("mousemove", onPatternMove);
+  document.addEventListener("mouseup", onPatternUp);
+}
+
+/**
+ * SVG fájl betöltése szövegként.
+ * FONTOS: file:// alatt a fetch sokszor hibára fut – ezért kell a http://localhost szerver.
+ */
+async function loadSvgAsText(url) {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Nem sikerült betölteni: ${url}`);
+  }
+  return await res.text();
+}
+
+/**
+ * Új minta létrehozása egy SVG szövegből.
+ */
+function addPatternFromSvg(svgText) {
+  const layer = document.getElementById("patterns-layer");
+  const layerRect = layer.getBoundingClientRect();
+
+  const el = document.createElement("div");
+  el.className = "pattern";
+  el.innerHTML = svgText;
+
+  // resize fogantyú
+  const handle = document.createElement("div");
+  handle.className = "resize-handle";
+  el.appendChild(handle);
+
+  // alapméret
+  const baseSize = 120;
+  el.style.width  = baseSize + "px";
+  el.style.height = baseSize + "px";
+
+  // középre
+  const left = (layerRect.width  - baseSize) / 2;
+  const top  = (layerRect.height - baseSize) / 2;
+  el.style.left = `${left}px`;
+  el.style.top  = `${top}px`;
+
+  layer.appendChild(el);
+
+  // aktuális mintaszín
+  applyPatternColor(el, currentPatternColor);
+  setActivePattern(el);
+}
+
+function setActivePattern(el) {
+  activePattern = el;
+  document.querySelectorAll(".pattern").forEach(p => p.classList.remove("active"));
+  if (el) el.classList.add("active");
+}
+
+/**
+ * Kitöltésszín cseréje az SVG-n belül.
+ */
+function applyPatternColor(patternEl, color) {
+  const svg = patternEl.querySelector("svg");
+  if (!svg) return;
+  svg.querySelectorAll("[fill]").forEach(el => {
+    if (el.getAttribute("fill") !== "none") {
+      el.setAttribute("fill", color);
+    }
+  });
+}
+
+/* -------- DRAG -------- */
+
+function startPatternDrag(e, pattern) {
+  const layer = pattern.parentElement;
+  const layerRect = layer.getBoundingClientRect();
+  const rect = pattern.getBoundingClientRect();
+
+  // hogy ne ugorjon: eltároljuk, hol fogtad meg a mintát
+  const offsetX = e.clientX - rect.left;
+  const offsetY = e.clientY - rect.top;
+
+  patternDrag = {
+    pattern,
+    layerRect,
+    offsetX,
+    offsetY
   };
 }
 
-function createTintedCanvas(img, colorHex) {
-  const c = document.createElement("canvas");
-  c.width = img.naturalWidth;
-  c.height = img.naturalHeight;
-  const cctx = c.getContext("2d");
-  cctx.drawImage(img, 0, 0);
+/* -------- RESIZE -------- */
 
-  const imgData = cctx.getImageData(0, 0, c.width, c.height);
-  const data = imgData.data;
-  const rgb = hexToRgb(colorHex);
+function startPatternResize(e, pattern) {
+  const rect = pattern.getBoundingClientRect();
+  patternResize = {
+    pattern,
+    startX: e.clientX,
+    startY: e.clientY,
+    startWidth: rect.width,
+    startHeight: rect.height,
+    aspect: rect.width / rect.height
+  };
+}
 
-  for (let i = 0; i < data.length; i += 4) {
-    const alpha = data[i + 3];
-    if (alpha === 0) continue;
-    data[i] = rgb.r;
-    data[i + 1] = rgb.g;
-    data[i + 2] = rgb.b;
+function onPatternMove(e) {
+  // drag
+  if (patternDrag) {
+    const { pattern, layerRect, offsetX, offsetY } = patternDrag;
+
+    let newLeft = e.clientX - layerRect.left - offsetX;
+    let newTop  = e.clientY - layerRect.top  - offsetY;
+
+    const maxLeft = layerRect.width  - pattern.offsetWidth;
+    const maxTop  = layerRect.height - pattern.offsetHeight;
+
+    newLeft = clamp(newLeft, 0, maxLeft);
+    newTop  = clamp(newTop, 0, maxTop);
+
+    pattern.style.left = `${newLeft}px`;
+    pattern.style.top  = `${newTop}px`;
   }
 
-  cctx.putImageData(imgData, 0, 0);
-  return c;
+  // resize
+  if (patternResize) {
+    const { pattern, startX, startY, startWidth, aspect } = patternResize;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    const delta = Math.max(dx, dy);
+
+    let newWidth = startWidth + delta;
+    newWidth = clamp(newWidth, MIN_PATTERN, MAX_PATTERN);
+    const newHeight = newWidth / aspect;
+
+    pattern.style.width  = `${newWidth}px`;
+    pattern.style.height = `${newHeight}px`;
+  }
 }
 
-function cmToPx(cm) {
-  return cm * PX_PER_CM;
+function onPatternUp() {
+  patternDrag = null;
+  patternResize = null;
 }
 
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
+function clamp(v, min, max) {
+  return Math.min(max, Math.max(min, v));
 }
 
-function pointInRect(x, y, rect) {
-  return (
-    x >= rect.x &&
-    x <= rect.x + rect.width &&
-    y >= rect.y &&
-    y <= rect.y + rect.height
-  );
+/*****************************************************************
+ * PNG EXPORT
+ *****************************************************************/
+function initExport() {
+  const btn = document.getElementById("export-btn");
+  const box = document.getElementById("box");
+
+  btn.addEventListener("click", async () => {
+    try {
+      const canvas = await html2canvas(box, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: null,
+        logging: false
+      });
+
+      const link = document.createElement("a");
+      link.href = canvas.toDataURL("image/png");
+      link.download = "emlekdoboz.png";
+      link.click();
+    } catch (err) {
+      console.error("Export hiba:", err);
+      alert(
+        "Hiba történt a PNG export során.\n" +
+        "Nagyon gyakran ez azért van, mert a fájlt közvetlenül megnyitod (file://...). " +
+        "Indíts egy egyszerű helyi webszervert, és onnan nyisd meg (http://localhost/...)."
+      );
+    }
+  });
 }
-
-// --- Szín gombok generálása -----------------------------------------
-
-function createColorSwatches(container, onClick, initialHex) {
-  container.innerHTML = "";
-  COLORS.forEach((c) => {
-    const btn = document.createElement("button");
-    btn.className = "color-swatch";
-    btn.style.backgroundColor = c.hex;
-    btn.dataset.hex = c.hex;
-    btn.title = `${c.id}: ${c.name}`;
-    if (c.hex === initialHex) btn.classList.add("active
