@@ -378,15 +378,13 @@ function initExport() {
 
   btn.addEventListener("click", async () => {
     try {
-      // 1) összes resize-handle elrejtése
-      const handles = document.querySelectorAll(".resize-handle");
-      handles.forEach(h => h.style.display = "none");
+      // 1) megjegyezzük, melyik minta volt aktív
+      const previouslyActive = document.querySelector(".pattern.active");
 
-      // 2) aktív keret ideiglenes kikapcsolása
-      const activeBefore = document.querySelector(".pattern.active");
+      // 2) minden mintáról levesszük az 'active' classt
       document.querySelectorAll(".pattern").forEach(p => p.classList.remove("active"));
 
-      // 3) canvas render
+      // 3) canvas render – így se keret, se fogantyú nem látszik
       const canvas = await html2canvas(box, {
         scale: 2,
         useCORS: true,
@@ -394,9 +392,10 @@ function initExport() {
         logging: false
       });
 
-      // 4) UI visszaállítása
-      handles.forEach(h => h.style.display = "block");
-      if (activeBefore) activeBefore.classList.add("active");
+      // 4) visszaadjuk az aktív állapotot szerkesztéshez
+      if (previouslyActive) {
+        previouslyActive.classList.add("active");
+      }
 
       // 5) letöltés
       const link = document.createElement("a");

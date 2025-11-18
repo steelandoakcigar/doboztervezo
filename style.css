@@ -277,8 +277,12 @@ html, body {
   border: 2px solid #232324;
   background: #ffffff;
   cursor: se-resize;
+  display: none;              /* alapból NEM látszik */
 }
 
+.pattern.active .resize-handle {
+  display: block;             /* csak az aktív mintán jelenik meg */
+}
 /* Reszponzív */
 
 @media (max-width: 900px) {
