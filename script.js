@@ -67,7 +67,21 @@ document.addEventListener("DOMContentLoaded", () => {
   initPatterns();
   initShortcuts();
   initExport();
+  initMobileMenu();
 });
+
+/*****************************************************************
+ * MOBIL MENÜ
+ *****************************************************************/
+function initMobileMenu() {
+  const btn = document.getElementById("mobile-menu-btn");
+  const sidebar = document.querySelector(".sidebar");
+  if (!btn || !sidebar) return;
+
+  btn.addEventListener("click", () => {
+    sidebar.classList.toggle("open");
+  });
+}
 
 /*****************************************************************
  * FA TEXTÚRA BETÖLTÉSE
@@ -123,16 +137,6 @@ function makeSwatch(color, onClick) {
   div.style.backgroundColor = color;
   div.addEventListener("click", onClick);
   return div;
-}
-
-function hexToRgba(hex, alpha) {
-  let c = hex.replace("#", "");
-  if (c.length === 3) c = c.split("").map(x => x + x).join("");
-  const n = parseInt(c, 16);
-  const r = (n >> 16) & 255;
-  const g = (n >> 8) & 255;
-  const b = n & 255;
-  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 /**
