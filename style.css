@@ -135,6 +135,9 @@ html, body {
   max-width: 85%;
   max-height: 85%;
   object-fit: contain;
+
+  /* Mindig feketének mutatja az ikon előnézetet */
+  filter: brightness(0) saturate(100%);
 }
 
 /* Színpaletták */
