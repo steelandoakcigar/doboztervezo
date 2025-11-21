@@ -10,6 +10,7 @@
  * - Ctrl+C / Ctrl+V minta duplikálás
  * - Összecsukható mintakategóriák (nyilas header)
  * - PNG export: fogantyúk és aktív keretek NEM látszanak
+ * - TELJESEN MOBILKOMPATIBILIS (touch + mouse)
  *****************************************************************/
 
 const COLORS = [
@@ -34,6 +35,26 @@ let clipboardPattern = null;
 // fa textúra a “bázis” színhez
 let woodImage = null;
 let woodReady = false;
+
+/*****************************************************************
+ * KÖZÖS POINTER KEZELÉS (EGÉR + TOUCH)
+ *****************************************************************/
+function getPointerPosition(e) {
+  if (e.touches && e.touches.length > 0) {
+    return {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY
+    };
+  }
+  return {
+    x: e.clientX,
+    y: e.clientY
+  };
+}
+
+function clamp(v, min, max) {
+  return Math.min(max, Math.max(min, v));
+}
 
 /*****************************************************************
  * INIT
@@ -159,7 +180,7 @@ function applyBoxTint(color) {
 }
 
 /*****************************************************************
- * FELIRAT – SZÖVEG, MÉRET, DRAG
+ * FELIRAT – SZÖVEG, MÉRET, DRAG (PC + MOBIL)
  *****************************************************************/
 function initTitle() {
   const input = document.getElementById("title-input");
@@ -197,6 +218,7 @@ function initTitle() {
   // drag – a teljes title-layer-t visszük, de a szöveget fogod
   let dragState = null;
 
+  // egér
   text.addEventListener("mousedown", (e) => {
     if (e.button !== 0) return;
     e.preventDefault();
@@ -227,6 +249,40 @@ function initTitle() {
     dragState = null;
     text.style.cursor = "grab";
   });
+
+  // mobil (touch)
+  text.addEventListener("touchstart", (e) => {
+    const pos = getPointerPosition(e);
+    e.preventDefault();
+
+    const transform = getComputedStyle(layer).transform;
+    const matrix = new DOMMatrix(transform === "none" ? undefined : transform);
+
+    dragState = {
+      startX: pos.x,
+      startY: pos.y,
+      baseX: matrix.m41,
+      baseY: matrix.m42
+    };
+    text.style.cursor = "grabbing";
+  }, { passive: false });
+
+  document.addEventListener("touchmove", (e) => {
+    if (!dragState) return;
+    const pos = getPointerPosition(e);
+    e.preventDefault();
+    const dx = pos.x - dragState.startX;
+    const dy = pos.y - dragState.startY;
+    const x = dragState.baseX + dx;
+    const y = dragState.baseY + dy;
+    layer.style.transform = `translate(${x}px, ${y}px)`;
+  }, { passive: false });
+
+  document.addEventListener("touchend", () => {
+    if (!dragState) return;
+    dragState = null;
+    text.style.cursor = "grab";
+  });
 }
 
 /*****************************************************************
@@ -243,7 +299,7 @@ function initPatternCategories() {
 }
 
 /*****************************************************************
- * MINTÁK – SAJÁT SVG FÁJLOKBÓL
+ * MINTÁK – SAJÁT SVG FÁJLOKBÓL (PC + MOBIL DRAG/RESIZE)
  *****************************************************************/
 function initPatterns() {
   // Mintagombok: a bennük lévő <img> src az igazi SVG útvonal
@@ -268,7 +324,7 @@ function initPatterns() {
 
   const layer = document.getElementById("patterns-layer");
 
-  // drag / resize indítása
+  // PC: drag / resize indítása
   layer.addEventListener("mousedown", (e) => {
     if (e.button !== 0) return;
 
@@ -286,8 +342,34 @@ function initPatterns() {
     e.preventDefault();
   });
 
+  // MOBIL: drag / resize indítása
+  layer.addEventListener("touchstart", (e) => {
+    const pattern = e.target.closest(".pattern");
+    if (!pattern) return;
+
+    setActivePattern(pattern);
+
+    if (e.target.classList.contains("resize-handle")) {
+      startPatternResize(e, pattern);
+    } else {
+      startPatternDrag(e, pattern);
+    }
+
+    e.preventDefault();
+  }, { passive: false });
+
+  // Mozgatás – mindkét inputtípus
   document.addEventListener("mousemove", onPatternMove);
+  document.addEventListener("touchmove", (e) => {
+    onPatternMove(e);
+    if (patternDrag || patternResize) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  // Felengedés – mindkét inputtípus
   document.addEventListener("mouseup", onPatternUp);
+  document.addEventListener("touchend", onPatternUp);
 }
 
 /** SVG betöltése szövegként (ugyanarról a domainről) */
@@ -370,15 +452,16 @@ function applyPatternColor(patternEl, color) {
   }
 }
 
-/* -------- DRAG -------- */
+/* -------- DRAG (EGYBEN PC + MOBILRA) -------- */
 
 function startPatternDrag(e, pattern) {
+  const pos = getPointerPosition(e);
   const layer = pattern.parentElement;
   const layerRect = layer.getBoundingClientRect();
   const rect = pattern.getBoundingClientRect();
 
-  const offsetX = e.clientX - rect.left;
-  const offsetY = e.clientY - rect.top;
+  const offsetX = pos.x - rect.left;
+  const offsetY = pos.y - rect.top;
 
   patternDrag = {
     pattern,
@@ -388,14 +471,15 @@ function startPatternDrag(e, pattern) {
   };
 }
 
-/* -------- RESIZE -------- */
+/* -------- RESIZE (EGYBEN PC + MOBILRA) -------- */
 
 function startPatternResize(e, pattern) {
+  const pos = getPointerPosition(e);
   const rect = pattern.getBoundingClientRect();
   patternResize = {
     pattern,
-    startX: e.clientX,
-    startY: e.clientY,
+    startX: pos.x,
+    startY: pos.y,
     startWidth: rect.width,
     startHeight: rect.height,
     aspect: rect.width / rect.height
@@ -403,12 +487,14 @@ function startPatternResize(e, pattern) {
 }
 
 function onPatternMove(e) {
+  const pos = getPointerPosition(e);
+
   // drag
   if (patternDrag) {
     const { pattern, layerRect, offsetX, offsetY } = patternDrag;
 
-    let newLeft = e.clientX - layerRect.left - offsetX;
-    let newTop  = e.clientY - layerRect.top  - offsetY;
+    let newLeft = pos.x - layerRect.left - offsetX;
+    let newTop  = pos.y - layerRect.top  - offsetY;
 
     const maxLeft = layerRect.width  - pattern.offsetWidth;
     const maxTop  = layerRect.height - pattern.offsetHeight;
@@ -423,8 +509,8 @@ function onPatternMove(e) {
   // resize
   if (patternResize) {
     const { pattern, startX, startY, startWidth, aspect } = patternResize;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
+    const dx = pos.x - startX;
+    const dy = pos.y - startY;
     const delta = Math.max(dx, dy);
 
     let newWidth = startWidth + delta;
@@ -439,10 +525,6 @@ function onPatternMove(e) {
 function onPatternUp() {
   patternDrag = null;
   patternResize = null;
-}
-
-function clamp(v, min, max) {
-  return Math.min(max, Math.max(min, v));
 }
 
 /*****************************************************************
