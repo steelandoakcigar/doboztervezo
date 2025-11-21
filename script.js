@@ -9,7 +9,7 @@
  * - Minták törlése: gomb + Delete / Backspace
  * - Ctrl+C / Ctrl+V minta duplikálás
  * - Összecsukható mintakategóriák (nyilas header)
- * - PNG export: 2×, fogantyúk és aktív keretek NEM látszanak
+ * - PNG export: fogantyúk és aktív keretek NEM látszanak
  *****************************************************************/
 
 const COLORS = [
@@ -26,9 +26,9 @@ let currentTitleColor   = COLORS[4]; // felirat
 let currentPatternColor = COLORS[5]; // minták
 let currentBoxTint      = null;      // doboz overlay
 
-let activePattern   = null;
-let patternDrag     = null;
-let patternResize   = null;
+let activePattern    = null;
+let patternDrag      = null;
+let patternResize    = null;
 let clipboardPattern = null;
 
 /*****************************************************************
@@ -70,7 +70,7 @@ function initPalettes() {
     const b = makeSwatch(color, () => {
       currentBoxTint = color;
       document.getElementById("box-tint-layer").style.background =
-        hexToRgba(color, 0.85); // 0.45 → 0.7, erősebb akrilhatás
+        hexToRgba(color, 0.85);
     });
     boxPal.appendChild(b);
   });
@@ -472,7 +472,7 @@ function pastePattern() {
 }
 
 /*****************************************************************
- * PNG EXPORT – fogantyúk + aktív keret nélkül
+ * PNG EXPORT – faerezet + overlay minél közelebb a szerkesztőhöz
  *****************************************************************/
 function initExport() {
   const btn = document.getElementById("export-btn");
@@ -480,26 +480,26 @@ function initExport() {
 
   btn.addEventListener("click", async () => {
     try {
-      // 1) Aktív minta ideiglenes eltüntetése
+      // 1) Aktív minta ideiglenes eltüntetése (fogantyú, keret ne látszódjon)
       const prevActive = document.querySelector(".pattern.active");
       document.querySelectorAll(".pattern").forEach(p => p.classList.remove("active"));
 
-      // 2) Mix-blend fix: export előtt állítsuk NORMAL-ra
+      // 2) Mix-blend workaround: export előtt NORMAL-ra állítjuk,
+      // hogy a html2canvas ne kergesse szét a fa textúrát
       const tint = document.getElementById("box-tint-layer");
       const prevBlend = tint.style.mixBlendMode;
       tint.style.mixBlendMode = "normal";
 
-      // 3) Éles, de még kisméretű PNG
+      // 3) Render – scale 1.5: éles, de még 2.5 MB alatt marad
       const canvas = await html2canvas(box, {
-  scale: 1,              // ← EZ A LÉNYEG!
-  useCORS: true,
-  backgroundColor: null,
-  logging: false,
-  allowTaint: true
-});
+        scale: 1.5,
+        useCORS: true,
+        backgroundColor: null,
+        logging: false,
+        allowTaint: true
+      });
 
-
-      // 4) Visszaállítjuk a mix-blendet
+      // 4) Visszaállítjuk a blendet
       tint.style.mixBlendMode = prevBlend;
 
       // 5) Visszaállítjuk az aktív mintát

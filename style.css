@@ -266,9 +266,20 @@ html, body {
   overflow: hidden;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
 
-  background-image: url("assets/textures/wood.png");
-  background-size: cover;
-  background-position: center;
+  /* itt már NEM háttérként van a fa, hanem külön rétegként (wood-bg) */
+  background: #d0d0d0;
+}
+
+/* Fa háttér réteg – ebből dolgozik a html2canvas is */
+
+#wood-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
 }
 
 /* Rétegek sorrendje */
