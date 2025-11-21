@@ -1,4 +1,3 @@
-
 /*****************************************************************
  * EMLÉKDOBOZ TERVEZŐ – EXAKT SVG + SZÍNEZÉS + BŐVÍTETT FUNKCIÓK
  * - 3–7 cm feliratmagasság
@@ -6,7 +5,7 @@
  * - Minták: icons/*.svg fájlokból (valódi gyártási minták)
  * - Minták drag + resize (nem ugrik)
  * - Minták színe: palettáról állítható (fill/style felülírva)
- * - Doboz színezése: FA TEXTÚRÁRA overlay réteggel (#box-tint-layer)
+ * - Doboz színezése: FA TEXTÚRA + SZÍN canvasról → #box backgroundImage
  * - Minták törlése: gomb + Delete / Backspace
  * - Ctrl+C / Ctrl+V minta duplikálás
  * - Összecsukható mintakategóriák (nyilas header)
@@ -25,27 +24,42 @@ const MAX_PATTERN = 300;
 
 let currentTitleColor   = COLORS[4]; // felirat
 let currentPatternColor = COLORS[5]; // minták
-let currentBoxTint      = COLORS[6]; // doboz-szín (fa textúrára, overlayen)
+let currentBoxTint      = COLORS[6]; // doboz-szín (fa textúrára)
 
 let activePattern    = null;
 let patternDrag      = null;
 let patternResize    = null;
 let clipboardPattern = null;
 
+// fa textúra a “bázis” színhez
+let woodImage = null;
+let woodReady = false;
+
 /*****************************************************************
  * INIT
  *****************************************************************/
 document.addEventListener("DOMContentLoaded", () => {
+  preloadWoodTexture();
   initPalettes();
   initTitle();
   initPatternCategories();
   initPatterns();
   initShortcuts();
   initExport();
-
-  // alap dobozszín induláskor
-  applyBoxTint(currentBoxTint);
 });
+
+/*****************************************************************
+ * FA TEXTÚRA BETÖLTÉSE
+ *****************************************************************/
+function preloadWoodTexture() {
+  woodImage = new Image();
+  woodImage.src = "assets/textures/wood.png";
+  woodImage.onload = () => {
+    woodReady = true;
+    // ha már van alap szín, ráégetjük
+    applyBoxTint(currentBoxTint);
+  };
+}
 
 /*****************************************************************
  * SZÍNPALETTÁK
@@ -70,7 +84,7 @@ function initPalettes() {
     });
     patternPal.appendChild(p);
 
-    // doboz – overlay színezése
+    // doboz – fa textúrára égetett szín
     const b = makeSwatch(color, () => {
       currentBoxTint = color;
       applyBoxTint(color);
@@ -102,16 +116,46 @@ function hexToRgba(hex, alpha) {
 
 /**
  * Doboz szín alkalmazása fa textúrára:
- * - a #box-tint-layer overlay kapja a színt
- * - mix-blend-mode: multiply miatt a faerezet látszódik alatta
- * - html2canvas pontosan ezt fogja látni és menteni
+ * - canvasra rajzoljuk a wood.png-t
+ * - multiply módban ráhúzzuk a választott színt
+ * - a végeredmény dataURL-ként a #box backgroundImage-e
+ * → html2canvas exportban 1:1-ben ezt látjuk viszont
  */
 function applyBoxTint(color) {
-  const tintLayer = document.getElementById("box-tint-layer");
-  if (!tintLayer) return;
+  const box = document.getElementById("box");
+  if (!box) return;
 
-  // enyhén áttetsző, hogy a faerezet szépen átüssön
-  tintLayer.style.backgroundColor = hexToRgba(color, 0.8);
+  // ha még nincs kész a fa kép, kap egy sima fa hátteret
+  if (!woodReady || !woodImage || !woodImage.naturalWidth) {
+    box.style.backgroundImage = "url('assets/textures/wood.png')";
+    box.style.backgroundColor = "";
+    return;
+  }
+
+  const w = woodImage.naturalWidth;
+  const h = woodImage.naturalHeight;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+
+  const ctx = canvas.getContext("2d");
+
+  // 1) fa textúra
+  ctx.drawImage(woodImage, 0, 0, w, h);
+
+  // 2) szín ráégetése
+  ctx.globalCompositeOperation = "multiply";
+  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.85;        // intenzitás
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.globalCompositeOperation = "source-over";
+  ctx.globalAlpha = 1;
+
+  const dataURL = canvas.toDataURL("image/png");
+  box.style.backgroundImage = `url(${dataURL})`;
+  box.style.backgroundColor = "";
 }
 
 /*****************************************************************
@@ -488,7 +532,7 @@ function pastePattern() {
 }
 
 /*****************************************************************
- * PNG EXPORT – fa textúrával ÉS dobozszínnel együtt
+ * PNG EXPORT – fa textúrával ÉS dobozszínnel együtt (canvas-baked)
  *****************************************************************/
 function initExport() {
   const btn = document.getElementById("export-btn");
@@ -500,13 +544,9 @@ function initExport() {
       const prevActive = document.querySelector(".pattern.active");
       document.querySelectorAll(".pattern").forEach(p => p.classList.remove("active"));
 
-      // 2) Render – #box, benne:
-      //    - #wood-bg (fa kép)
-      //    - #box-tint-layer (színező overlay)
-      //    - #patterns-layer (minták)
-      //    - #title-layer (felirat)
+      // 2) Render
       const canvas = await html2canvas(box, {
-        scale: 1,
+        scale: 2,
         useCORS: true,
         backgroundColor: null,
         logging: false
@@ -527,4 +567,3 @@ function initExport() {
     }
   });
 }
-

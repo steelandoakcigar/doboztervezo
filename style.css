@@ -255,7 +255,7 @@ html, body {
   max-height: calc(100% - 40px);
 }
 
-/* A4 doboz */
+/* A4 doboz – fa + szín a backgroundImage-ben */
 
 #box {
   position: relative;
@@ -266,32 +266,13 @@ html, body {
   overflow: hidden;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
 
-  /* itt már NEM háttérként van a fa, hanem külön rétegként (wood-bg) */
-  background: #d0d0d0;
-}
-
-/* Fa háttér réteg – ebből dolgozik a html2canvas is */
-
-#wood-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: 0;
-  pointer-events: none;
+  /* alap fa háttér, amíg a JS rá nem égeti a színt */
+  background-image: url("assets/textures/wood.png");
+  background-size: cover;
+  background-position: center;
 }
 
 /* Rétegek sorrendje */
-
-#box-tint-layer {
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0);
-  mix-blend-mode: multiply;
-  pointer-events: none;
-  z-index: 1;
-}
 
 #patterns-layer {
   position: absolute;
