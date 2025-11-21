@@ -480,26 +480,32 @@ function initExport() {
 
   btn.addEventListener("click", async () => {
     try {
-      // 1) megjegyezzük, melyik minta volt aktív
-      const previouslyActive = document.querySelector(".pattern.active");
-
-      // 2) minden mintáról levesszük az 'active' classt
+      // 1) Aktív minta ideiglenes eltüntetése
+      const prevActive = document.querySelector(".pattern.active");
       document.querySelectorAll(".pattern").forEach(p => p.classList.remove("active"));
 
-      // 3) canvas render – így se keret, se fogantyú nem látszik
+      // 2) Mix-blend fix: export előtt állítsuk NORMAL-ra
+      const tint = document.getElementById("box-tint-layer");
+      const prevBlend = tint.style.mixBlendMode;
+      tint.style.mixBlendMode = "normal";
+
+      // 3) Éles, de még kisméretű PNG
       const canvas = await html2canvas(box, {
-        scale: 2,
+        scale: 3,               // élesebb, nem túl nagy
         useCORS: true,
         backgroundColor: null,
-        logging: false
+        logging: false,
+        willReadFrequently: true,
+        imageTimeout: 0
       });
 
-      // 4) visszaadjuk az aktív állapotot szerkesztéshez
-      if (previouslyActive) {
-        previouslyActive.classList.add("active");
-      }
+      // 4) Visszaállítjuk a mix-blendet
+      tint.style.mixBlendMode = prevBlend;
 
-      // 5) letöltés
+      // 5) Visszaállítjuk az aktív mintát
+      if (prevActive) prevActive.classList.add("active");
+
+      // 6) Letöltés
       const link = document.createElement("a");
       link.href = canvas.toDataURL("image/png");
       link.download = "emlekdoboz.png";
