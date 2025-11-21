@@ -491,13 +491,13 @@ function initExport() {
 
       // 3) Éles, de még kisméretű PNG
       const canvas = await html2canvas(box, {
-        scale: 3,               // élesebb, nem túl nagy
-        useCORS: true,
-        backgroundColor: null,
-        logging: false,
-        willReadFrequently: true,
-        imageTimeout: 0
-      });
+  scale: 1,              // ← EZ A LÉNYEG!
+  useCORS: true,
+  backgroundColor: null,
+  logging: false,
+  allowTaint: true
+});
+
 
       // 4) Visszaállítjuk a mix-blendet
       tint.style.mixBlendMode = prevBlend;
