@@ -1,12 +1,14 @@
-
 /*****************************************************************
- * EMLÉKDOBOZ TERVEZŐ – EXAKT SVG + SZÍNEZÉS + TISZTA EXPORT
+ * EMLÉKDOBOZ TERVEZŐ – EXAKT SVG + SZÍNEZÉS + BŐVÍTETT FUNKCIÓK
  * - 3–7 cm feliratmagasság
  * - Felirat drag & drop (szöveg fogható)
  * - Minták: icons/*.svg fájlokból (valódi gyártási minták)
  * - Minták drag + resize (nem ugrik)
  * - Minták színe: palettáról állítható (fill/style felülírva)
- * - Doboz akril színezése overlay rétegen
+ * - Doboz akril színezése overlay rétegen (erősebb tint)
+ * - Minták törlése: gomb + Delete / Backspace
+ * - Ctrl+C / Ctrl+V minta duplikálás
+ * - Összecsukható mintakategóriák (nyilas header)
  * - PNG export: 2×, fogantyúk és aktív keretek NEM látszanak
  *****************************************************************/
 
@@ -24,9 +26,10 @@ let currentTitleColor   = COLORS[4]; // felirat
 let currentPatternColor = COLORS[5]; // minták
 let currentBoxTint      = null;      // doboz overlay
 
-let activePattern = null;
-let patternDrag   = null;
-let patternResize = null;
+let activePattern   = null;
+let patternDrag     = null;
+let patternResize   = null;
+let clipboardPattern = null;
 
 /*****************************************************************
  * INIT
@@ -34,7 +37,9 @@ let patternResize = null;
 document.addEventListener("DOMContentLoaded", () => {
   initPalettes();
   initTitle();
+  initPatternCategories();
   initPatterns();
+  initShortcuts();
   initExport();
 });
 
@@ -61,11 +66,11 @@ function initPalettes() {
     });
     patternPal.appendChild(p);
 
-    // doboz
+    // doboz (erősebb tint)
     const b = makeSwatch(color, () => {
       currentBoxTint = color;
       document.getElementById("box-tint-layer").style.background =
-        hexToRgba(color, 0.45);
+        hexToRgba(color, 0.85); // 0.45 → 0.7, erősebb akrilhatás
     });
     boxPal.appendChild(b);
   });
@@ -158,6 +163,19 @@ function initTitle() {
     if (!dragState) return;
     dragState = null;
     text.style.cursor = "grab";
+  });
+}
+
+/*****************************************************************
+ * MINTA KATEGÓRIÁK – NYILAS ÖSSZECSUKÁS
+ *****************************************************************/
+function initPatternCategories() {
+  document.querySelectorAll(".pattern-category").forEach(cat => {
+    const header = cat.querySelector(".pattern-category-header");
+    if (!header) return;
+    header.addEventListener("click", () => {
+      cat.classList.toggle("collapsed");
+    });
   });
 }
 
@@ -275,7 +293,6 @@ function applyPatternColor(patternEl, color) {
       el.setAttribute("fill", color); // attribútum
       el.style.fill = color;          // inline style – ez a legerősebb
     }
-    // ha csak stroke van (kontúros elem), opcionálisan ezt is átszínezhetjük
     const strokeAttr = el.getAttribute("stroke");
     if (strokeAttr && strokeAttr !== "none") {
       el.setAttribute("stroke", color);
@@ -283,7 +300,6 @@ function applyPatternColor(patternEl, color) {
     }
   });
 
-  // Ha van <style> blokk, ott is cserélhetünk fill-t, de az inline úgyis felülírja.
   const styleEl = svg.querySelector("style");
   if (styleEl && styleEl.textContent.includes("fill:")) {
     styleEl.textContent = styleEl.textContent.replace(
@@ -367,6 +383,92 @@ function onPatternUp() {
 
 function clamp(v, min, max) {
   return Math.min(max, Math.max(min, v));
+}
+
+/*****************************************************************
+ * TÖRLÉS, MÁSOLÁS / BEILLESZTÉS
+ *****************************************************************/
+function initShortcuts() {
+  const deleteBtn = document.getElementById("delete-pattern-btn");
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", () => {
+      deleteActivePattern();
+    });
+  }
+
+  document.addEventListener("keydown", (e) => {
+    const tag = (e.target && e.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea") return;
+
+    // törlés – Delete / Backspace
+    if ((e.key === "Delete" || e.key === "Backspace") && activePattern) {
+      e.preventDefault();
+      deleteActivePattern();
+      return;
+    }
+
+    // Ctrl+C – másolás
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c" && activePattern) {
+      e.preventDefault();
+      copyActivePattern();
+      return;
+    }
+
+    // Ctrl+V – beillesztés
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v" && clipboardPattern) {
+      e.preventDefault();
+      pastePattern();
+      return;
+    }
+  });
+}
+
+function deleteActivePattern() {
+  if (!activePattern) return;
+  activePattern.remove();
+  activePattern = null;
+}
+
+function copyActivePattern() {
+  if (!activePattern) return;
+  const svg = activePattern.querySelector("svg");
+  if (!svg) return;
+  clipboardPattern = {
+    svg: svg.outerHTML,
+    width: activePattern.offsetWidth,
+    height: activePattern.offsetHeight
+  };
+}
+
+function pastePattern() {
+  if (!clipboardPattern) return;
+  const layer = document.getElementById("patterns-layer");
+  const layerRect = layer.getBoundingClientRect();
+
+  const el = document.createElement("div");
+  el.className = "pattern";
+  el.innerHTML = clipboardPattern.svg;
+
+  const handle = document.createElement("div");
+  handle.className = "resize-handle";
+  el.appendChild(handle);
+
+  el.style.width  = clipboardPattern.width + "px";
+  el.style.height = clipboardPattern.height + "px";
+
+  let baseLeft = (layerRect.width  - clipboardPattern.width)  / 2;
+  let baseTop  = (layerRect.height - clipboardPattern.height) / 2;
+
+  if (activePattern) {
+    baseLeft = activePattern.offsetLeft + 20;
+    baseTop  = activePattern.offsetTop  + 20;
+  }
+
+  el.style.left = baseLeft + "px";
+  el.style.top  = baseTop + "px";
+
+  layer.appendChild(el);
+  setActivePattern(el);
 }
 
 /*****************************************************************

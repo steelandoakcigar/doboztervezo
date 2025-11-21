@@ -103,11 +103,34 @@ html, body {
   margin-bottom: 16px;
 }
 
-.pattern-category-title {
+.pattern-category-header {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 4px 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: 13px;
   font-weight: 600;
-  margin: 6px 0 8px;
-  color: #333;
+  cursor: pointer;
+}
+
+.pattern-category-arrow {
+  font-size: 11px;
+  transition: transform 0.15s ease;
+}
+
+.pattern-category-body {
+  margin-top: 4px;
+}
+
+.pattern-category.collapsed .pattern-category-body {
+  display: none;
+}
+
+.pattern-category.collapsed .pattern-category-arrow {
+  transform: rotate(-90deg);
 }
 
 .pattern-grid {
@@ -135,8 +158,7 @@ html, body {
   max-width: 85%;
   max-height: 85%;
   object-fit: contain;
-
-  /* Mindig feketének mutatja az ikon előnézetet */
+  /* Mindig fekete ikon előnézet */
   filter: brightness(0) saturate(100%);
 }
 
@@ -169,7 +191,7 @@ html, body {
   outline: 2px solid #000;
 }
 
-/* Gomb */
+/* Gombok */
 
 .primary-btn {
   width: 100%;
@@ -185,6 +207,28 @@ html, body {
 
 .primary-btn:hover {
   opacity: 0.9;
+}
+
+.secondary-btn {
+  width: 100%;
+  padding: 6px 8px;
+  margin-top: 8px;
+  border-radius: 0;
+  border: 1px solid #999;
+  background: #ffffff;
+  color: #232324;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.secondary-btn:hover {
+  background: #f0f0f0;
+}
+
+.hint-text {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #777;
 }
 
 /* Munkaterület */
