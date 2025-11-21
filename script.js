@@ -5,7 +5,7 @@
  * - Minták: icons/*.svg fájlokból (valódi gyártási minták)
  * - Minták drag + resize (nem ugrik)
  * - Minták színe: palettáról állítható (fill/style felülírva)
- * - Doboz akril színezése overlay rétegen (erősebb tint)
+ * - Doboz akril színezése overlay rétegen
  * - Minták törlése: gomb + Delete / Backspace
  * - Ctrl+C / Ctrl+V minta duplikálás
  * - Összecsukható mintakategóriák (nyilas header)
@@ -66,11 +66,11 @@ function initPalettes() {
     });
     patternPal.appendChild(p);
 
-    // doboz (erősebb tint)
+    // doboz (akril overlay)
     const b = makeSwatch(color, () => {
       currentBoxTint = color;
       document.getElementById("box-tint-layer").style.background =
-        hexToRgba(color, 0.85);
+        hexToRgba(color, 0.85); // ha túl erős, visszaveheted 0.6–0.7-re
     });
     boxPal.appendChild(b);
   });
@@ -276,8 +276,6 @@ function setActivePattern(el) {
 
 /**
  * Mintaszín alkalmazása az SVG-n belül.
- * Erőből ráírjuk fill/style.fill-t az összes alakzatra,
- * így felülírjuk az Illustrator/InkScape féle .cls-1 { fill: ... } definíciókat is.
  */
 function applyPatternColor(patternEl, color) {
   const svg = patternEl.querySelector("svg");
@@ -290,8 +288,8 @@ function applyPatternColor(patternEl, color) {
   targets.forEach(el => {
     const fillAttr = el.getAttribute("fill");
     if (fillAttr !== "none") {
-      el.setAttribute("fill", color); // attribútum
-      el.style.fill = color;          // inline style – ez a legerősebb
+      el.setAttribute("fill", color);
+      el.style.fill = color;
     }
     const strokeAttr = el.getAttribute("stroke");
     if (strokeAttr && strokeAttr !== "none") {
@@ -316,7 +314,6 @@ function startPatternDrag(e, pattern) {
   const layerRect = layer.getBoundingClientRect();
   const rect = pattern.getBoundingClientRect();
 
-  // ne ugorjon: ahol megfogtad, ott marad az egér alatt
   const offsetX = e.clientX - rect.left;
   const offsetY = e.clientY - rect.top;
 
@@ -472,7 +469,8 @@ function pastePattern() {
 }
 
 /*****************************************************************
- * PNG EXPORT – faerezet + overlay minél közelebb a szerkesztőhöz
+ * PNG EXPORT – fogantyúk + aktív keret nélkül,
+ * fa textúra változatlanul látszik
  *****************************************************************/
 function initExport() {
   const btn = document.getElementById("export-btn");
@@ -480,32 +478,23 @@ function initExport() {
 
   btn.addEventListener("click", async () => {
     try {
-      // 1) Aktív minta ideiglenes eltüntetése (fogantyú, keret ne látszódjon)
+      // 1) Aktív minta ideiglenes eltüntetése (ne látszódjon a keret + fogantyú)
       const prevActive = document.querySelector(".pattern.active");
       document.querySelectorAll(".pattern").forEach(p => p.classList.remove("active"));
 
-      // 2) Mix-blend workaround: export előtt NORMAL-ra állítjuk,
-      // hogy a html2canvas ne kergesse szét a fa textúrát
-      const tint = document.getElementById("box-tint-layer");
-      const prevBlend = tint.style.mixBlendMode;
-      tint.style.mixBlendMode = "normal";
-
-      // 3) Render – scale 1.5: éles, de még 2.5 MB alatt marad
+      // 2) Render – NEM nyúlunk a mix-blend-mode-hoz, így a wood.png textúra marad
       const canvas = await html2canvas(box, {
-        scale: 1.5,
+        scale: 1,              // ha kell szebb, nyugodtan felviheted 1.5-re
         useCORS: true,
         backgroundColor: null,
         logging: false,
         allowTaint: true
       });
 
-      // 4) Visszaállítjuk a blendet
-      tint.style.mixBlendMode = prevBlend;
-
-      // 5) Visszaállítjuk az aktív mintát
+      // 3) Visszaállítjuk az aktív mintát
       if (prevActive) prevActive.classList.add("active");
 
-      // 6) Letöltés
+      // 4) Letöltés
       const link = document.createElement("a");
       link.href = canvas.toDataURL("image/png");
       link.download = "emlekdoboz.png";
@@ -517,3 +506,4 @@ function initExport() {
     }
   });
 }
+
