@@ -1,3 +1,4 @@
+
 /*****************************************************************
  * EMLÉKDOBOZ TERVEZŐ – EXAKT SVG + SZÍNEZÉS + BŐVÍTETT FUNKCIÓK
  * - 3–7 cm feliratmagasság
@@ -5,7 +6,7 @@
  * - Minták: icons/*.svg fájlokból (valódi gyártási minták)
  * - Minták drag + resize (nem ugrik)
  * - Minták színe: palettáról állítható (fill/style felülírva)
- * - Doboz akril színezése overlay rétegen
+ * - Doboz színezése: FA TEXTÚRÁS háttér generálása canvasról
  * - Minták törlése: gomb + Delete / Backspace
  * - Ctrl+C / Ctrl+V minta duplikálás
  * - Összecsukható mintakategóriák (nyilas header)
@@ -24,17 +25,22 @@ const MAX_PATTERN = 300;
 
 let currentTitleColor   = COLORS[4]; // felirat
 let currentPatternColor = COLORS[5]; // minták
-let currentBoxTint      = null;      // doboz overlay
+let currentBoxTint      = null;      // doboz-szín (fa textúrára)
 
 let activePattern    = null;
 let patternDrag      = null;
 let patternResize    = null;
 let clipboardPattern = null;
 
+// Fa textúra alap kép
+let woodImage = null;
+let woodReady = false;
+
 /*****************************************************************
  * INIT
  *****************************************************************/
 document.addEventListener("DOMContentLoaded", () => {
+  preloadWoodTexture();
   initPalettes();
   initTitle();
   initPatternCategories();
@@ -42,6 +48,17 @@ document.addEventListener("DOMContentLoaded", () => {
   initShortcuts();
   initExport();
 });
+
+/*****************************************************************
+ * FA TEXTÚRA BETÖLTÉS
+ *****************************************************************/
+function preloadWoodTexture() {
+  woodImage = new Image();
+  woodImage.src = "assets/textures/wood.png";
+  woodImage.onload = () => {
+    woodReady = true;
+  };
+}
 
 /*****************************************************************
  * SZÍNPALETTÁK
@@ -66,11 +83,10 @@ function initPalettes() {
     });
     patternPal.appendChild(p);
 
-    // doboz (akril overlay)
+    // doboz – FA TEXTÚRÁRA színezve
     const b = makeSwatch(color, () => {
       currentBoxTint = color;
-      document.getElementById("box-tint-layer").style.background =
-        hexToRgba(color, 0.85); // ha túl erős, visszaveheted 0.6–0.7-re
+      applyBoxTint(color);
     });
     boxPal.appendChild(b);
   });
@@ -95,6 +111,45 @@ function hexToRgba(hex, alpha) {
   const g = (n >> 8) & 255;
   const b = n & 255;
   return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/**
+ * Doboz szín alkalmazása fa textúrára:
+ * - ha betöltődött a wood.png, generálunk egy új, színezett textúrát canvasról
+ * - html2canvas 1:1-ben ezt fogja látni, úgyhogy az export = szerkesztő
+ */
+function applyBoxTint(color) {
+  const box = document.getElementById("box");
+
+  // Ha valamiért még nem töltődött be a fa kép, fallback: sima overlay (de ez ritka)
+  if (!woodReady || !woodImage) {
+    document.getElementById("box-tint-layer").style.background = hexToRgba(color, 0.7);
+    return;
+  }
+
+  const w = woodImage.naturalWidth;
+  const h = woodImage.naturalHeight;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+
+  const ctx = canvas.getContext("2d");
+
+  // 1) alap fa textúra
+  ctx.drawImage(woodImage, 0, 0, w, h);
+
+  // 2) szín „ráégetése” multiply módban
+  ctx.globalCompositeOperation = "multiply";
+  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.85;            // ha túl erős, nyugodtan vedd 0.7-re
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.globalCompositeOperation = "source-over";
+  ctx.globalAlpha = 1;
+
+  const dataURL = canvas.toDataURL("image/png");
+  box.style.backgroundImage = `url(${dataURL})`;
 }
 
 /*****************************************************************
@@ -469,8 +524,7 @@ function pastePattern() {
 }
 
 /*****************************************************************
- * PNG EXPORT – fogantyúk + aktív keret nélkül,
- * fa textúra változatlanul látszik
+ * PNG EXPORT – fa textúrával együtt
  *****************************************************************/
 function initExport() {
   const btn = document.getElementById("export-btn");
@@ -478,20 +532,19 @@ function initExport() {
 
   btn.addEventListener("click", async () => {
     try {
-      // 1) Aktív minta ideiglenes eltüntetése (ne látszódjon a keret + fogantyú)
+      // 1) Aktív minta keretének elrejtése export idejére
       const prevActive = document.querySelector(".pattern.active");
       document.querySelectorAll(".pattern").forEach(p => p.classList.remove("active"));
 
-      // 2) Render – NEM nyúlunk a mix-blend-mode-hoz, így a wood.png textúra marad
+      // 2) Render – a fa textúra most már tényleg a backgroundImage része
       const canvas = await html2canvas(box, {
-        scale: 1,              // ha kell szebb, nyugodtan felviheted 1.5-re
+        scale: 1,
         useCORS: true,
         backgroundColor: null,
-        logging: false,
-        allowTaint: true
+        logging: false
       });
 
-      // 3) Visszaállítjuk az aktív mintát
+      // 3) Aktív minta vissza
       if (prevActive) prevActive.classList.add("active");
 
       // 4) Letöltés
