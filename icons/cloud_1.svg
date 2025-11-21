@@ -5,12 +5,35 @@
    viewBox="-929.5 -506.00003 100.00006 100.00009"
    version="1.1"
    id="svg42"
+   sodipodi:docname="cloud_1.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="2.0452292"
+     inkscape:cx="188.73191"
+     inkscape:cy="188.97638"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg42" />
   <defs
      id="defs42" />
   <path
-     style="fill:#e3d7bf;fill-opacity:0.6;stroke:none;stroke-width:0.0500005mm"
+     style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.0500005mm"
      d="m -919.03452,-449.92366 c 0,8.07239 4.05798,13.92911 9.50764,16.73193 4.72574,2.43002 10.66196,2.11534 15.02941,-1.07014 1.3163,-0.95995 2.8305,-1.75735 3.24605,-3.31377 1.28094,0.8577 2.4144,2.16605 3.86996,3.07583 6.82844,4.26851 12.115,-1.17211 13.98255,-0.51835 2.5838,0.90458 1.56026,2.45881 10.31655,2.45881 5.40415,0 9.40651,-4.67282 11.96206,-8.48931 3.45905,1.65976 7.25087,1.93305 9.93197,-1.25846 4.79811,-5.71062 1.46541,-16.9482 -8.77439,-14.56258 -2.26554,-4.72189 -1.42701,-3.88365 -5.88139,-8.39612 -4.65941,-4.72052 -10.89494,-5.57822 -16.88541,-2.40836 -0.71106,-1.48214 -1.11016,-2.78802 -1.93991,-4.23424 l -2.33956,-3.06268 c -6.37151,-6.64014 -18.65429,-6.45073 -24.07736,5.56589 -0.78808,1.7461 -0.12472,1.16964 -2.32339,1.53531 -1.44623,0.2404 -2.04956,0.24341 -3.24579,0.61292 -7.6157,2.35272 -12.37928,10.23295 -12.37928,17.33333 z"
      id="path15" />
 </svg>
