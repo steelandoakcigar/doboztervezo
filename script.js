@@ -141,20 +141,29 @@ function initTitle() {
 
   if (!input || !titleText || !titleBox) return;
 
-  // induló felirat szöveg
+  // Alap szöveg
   if (!input.value) {
     input.value = "Felirat";
     titleText.textContent = "Felirat";
   }
 
-  // szöveg változás
+  // Szöveg változás
   input.addEventListener("input", () => {
     titleText.textContent = input.value || "Felirat";
     updateTitleSizeInput();
   });
 
-  // kezdeti középre igazítás px-ben
+  // Középre még indulás előtt
   centerTitleBox();
+
+  // *** A LÉNYEG: 2 lépésben állítjuk be az induló 4 cm magasságot ***
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      setTitleHeightCm(4);   // valós 4 cm magasság
+      centerTitleBox();      // újra középre
+      updateTitleSizeInput();
+    });
+  });
 
   // Drag – egér
   titleText.addEventListener("mousedown", (e) => {
