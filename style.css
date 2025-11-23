@@ -90,6 +90,7 @@ html, body {
   border-radius: 0;
   border: 1px solid #ccc;
   font-size: 14px;
+  background: #eee;
 }
 
 .field-unit {
@@ -255,7 +256,7 @@ html, body {
   max-height: calc(100% - 40px);
 }
 
-/* A4 doboz – fa + szín a backgroundImage-ben */
+/* A4 doboz – fa háttér (NEM színezhető) */
 
 #box {
   position: relative;
@@ -266,7 +267,7 @@ html, body {
   overflow: hidden;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
 
-  /* alap fa háttér, amíg a JS rá nem égeti a színt */
+  /* alap fa háttér, fix natúr */
   background-image: url("assets/textures/wood.png");
   background-size: cover;
   background-position: center;
@@ -284,11 +285,17 @@ html, body {
 #title-layer {
   position: absolute;
   inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  pointer-events: none; /* csak a szöveg fogható */
+  pointer-events: none;
   z-index: 3;
+}
+
+#title-box {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  display: inline-block;
 }
 
 /* Felirat */
@@ -300,6 +307,20 @@ html, body {
   line-height: 1;
   pointer-events: auto;
   cursor: grab;
+}
+
+/* Általános fogantyú */
+
+.resize-handle {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 0;
+  border: 2px solid #232324;
+  background: #ffffff;
+  cursor: se-resize;
 }
 
 /* Minták a dobozon */
@@ -319,21 +340,24 @@ html, body {
   height: 100%;
 }
 
+/* Minták fogantyúja csak aktív elemnél látszik */
+
 .pattern .resize-handle {
-  position: absolute;
-  right: -6px;
-  bottom: -6px;
-  width: 12px;
-  height: 12px;
-  border-radius: 0;
-  border: 2px solid #232324;
-  background: #ffffff;
-  cursor: se-resize;
-  display: none;              /* alapból NEM látszik */
+  display: none;
 }
 
 .pattern.active .resize-handle {
-  display: block;             /* csak az aktív mintán jelenik meg */
+  display: block;
+}
+
+/* Export közben rejtsük a fogantyúkat, kereteket */
+
+.exporting .resize-handle {
+  display: none !important;
+}
+
+.exporting .pattern {
+  outline: none !important;
 }
 
 /* Reszponzív */
@@ -351,7 +375,6 @@ html, body {
 
 /* Mobil adaptív méretezés */
 @media (max-width: 900px) {
-
   /* A doboz mindig beleférjen a kijelzőbe */
   #box {
     width: 100vw;
@@ -359,16 +382,14 @@ html, body {
     max-width: 100vw;
     max-height: calc(100vh - 80px);
   }
-
-  /* Landscape módban inkább magasságra igazodjon */
-  @media (orientation: landscape) {
-    #box {
-      height: calc(100vh - 40px);
-      width: auto;
-      max-height: calc(100vh - 40px);
-      max-width: 100vw;
-    }
-  }
-
 }
 
+/* Landscape mobil */
+@media (max-width: 900px) and (orientation: landscape) {
+  #box {
+    height: calc(100vh - 40px);
+    width: auto;
+    max-height: calc(100vh - 40px);
+    max-width: 100vw;
+  }
+}

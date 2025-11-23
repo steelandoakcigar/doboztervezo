@@ -17,9 +17,16 @@
         <label class="field-label" for="title-input">Felirat szövege</label>
         <input id="title-input" type="text" placeholder="Írd ide a feliratot..." />
 
-        <label class="field-label" for="title-size">Felirat méret (cm)</label>
+        <label class="field-label" for="title-size">Felirat magasság (cm)</label>
         <div class="field-row">
-          <input id="title-size" type="number" min="3" max="7" value="4" />
+          <input
+            id="title-size"
+            type="number"
+            min="3"
+            max="7"
+            value="4"
+            readonly
+          />
           <span class="field-unit">cm</span>
         </div>
 
@@ -118,16 +125,18 @@
         </div>
       </section>
 
-      <!-- Doboz színezés -->
+      <!-- Mentés -->
       <section class="panel-section">
-        <h2>Doboz színezés</h2>
-        <div class="palette-block">
-          <div class="palette-title">Doboz alapszín</div>
-          <div id="box-palette" class="color-palette"></div>
-        </div>
+        <h2>Mentés</h2>
         <button id="export-btn" class="primary-btn" type="button">
-          PNG export
+          Terv mentése (PNG)
         </button>
+        <button id="export-csv-btn" class="secondary-btn" type="button">
+          Méretek mentése (CSV)
+        </button>
+        <div class="hint-text">
+          A PNG a látványtervet menti, a CSV a felirat és minták méretét, színét (színnévvel).
+        </div>
       </section>
     </aside>
 
@@ -136,10 +145,13 @@
       <div class="workspace-inner">
         <div id="box-wrapper">
           <div id="box">
-            <!-- CSAK a tartalmi rétegek: a fa + szín a backgroundImage-ben van -->
+            <!-- CSAK a tartalmi rétegek: a fa háttér CSS-ből jön -->
             <div id="patterns-layer"></div>
             <div id="title-layer">
-              <span id="title-text">Felirat</span>
+              <div id="title-box">
+                <span id="title-text">Felirat</span>
+                <div class="resize-handle title-resize"></div>
+              </div>
             </div>
           </div>
         </div>

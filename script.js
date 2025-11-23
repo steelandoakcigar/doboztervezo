@@ -1,15 +1,17 @@
+
 /*****************************************************************
  * EMLÉKDOBOZ TERVEZŐ – EXAKT SVG + SZÍNEZÉS + BŐVÍTETT FUNKCIÓK
- * - 3–7 cm feliratmagasság
- * - Felirat drag & drop (szöveg fogható)
+ * - Felirat drag + sarkos fogantyúval méretezés (mobil + PC)
+ * - Felirat magassága cm-ben kiírva (csak kijelzés, readonly)
  * - Minták: icons/*.svg fájlokból (valódi gyártási minták)
  * - Minták drag + resize (nem ugrik)
  * - Minták színe: palettáról állítható (fill/style felülírva)
- * - Doboz színezése: FA TEXTÚRA + SZÍN canvasról → #box backgroundImage
+ * - Doboz: fix natúr fa háttér (NEM színezhető)
  * - Minták törlése: gomb + Delete / Backspace
  * - Ctrl+C / Ctrl+V minta duplikálás
  * - Összecsukható mintakategóriák (nyilas header)
  * - PNG export: fogantyúk és aktív keretek NEM látszanak
+ * - CSV export: felirat + minták méretei és színei, színnévvel
  * - TELJESEN MOBILKOMPATIBILIS (touch + mouse)
  *****************************************************************/
 
@@ -20,21 +22,40 @@ const COLORS = [
   "#c57e86", "#8e6db3"
 ];
 
+/* Színnevek CSV-hez (hex → név) */
+const COLOR_NAMES = {
+  "#e6e3dd": "natúr fehér",
+  "#6e849b": "kékesszürke",
+  "#0f94a0": "türkiz",
+  "#0f4e8a": "mélykék",
+  "#232324": "antracit",
+  "#7b5a48": "dióbarna",
+  "#c6b49a": "bézs",
+  "#72653b": "olívazöld",
+  "#9aad8d": "fakó zöld",
+  "#3b6f3f": "mély zöld",
+  "#76b46a": "világos zöld",
+  "#c8a229": "mustársárga",
+  "#c57e86": "piszkos rózsaszín",
+  "#8e6db3": "levendula lila"
+};
+
 const MIN_PATTERN = 80;
 const MAX_PATTERN = 300;
 
+/* Aktuális színek */
 let currentTitleColor   = COLORS[4]; // felirat
 let currentPatternColor = COLORS[5]; // minták
-let currentBoxTint      = COLORS[6]; // doboz-szín (fa textúrára)
 
+/* Minták állapota */
 let activePattern    = null;
 let patternDrag      = null;
 let patternResize    = null;
 let clipboardPattern = null;
 
-// fa textúra a “bázis” színhez
-let woodImage = null;
-let woodReady = false;
+/* Felirat állapota (drag + resize) */
+let titleDrag   = null;
+let titleResize = null;
 
 /*****************************************************************
  * KÖZÖS POINTER KEZELÉS (EGÉR + TOUCH)
@@ -60,27 +81,14 @@ function clamp(v, min, max) {
  * INIT
  *****************************************************************/
 document.addEventListener("DOMContentLoaded", () => {
-  preloadWoodTexture();
   initPalettes();
   initTitle();
   initPatternCategories();
   initPatterns();
   initShortcuts();
   initExport();
+  initCsvExport();
 });
-
-/*****************************************************************
- * FA TEXTÚRA BETÖLTÉSE
- *****************************************************************/
-function preloadWoodTexture() {
-  woodImage = new Image();
-  woodImage.src = "assets/textures/wood.png";
-  woodImage.onload = () => {
-    woodReady = true;
-    // ha már van alap szín, ráégetjük
-    applyBoxTint(currentBoxTint);
-  };
-}
 
 /*****************************************************************
  * SZÍNPALETTÁK
@@ -88,13 +96,13 @@ function preloadWoodTexture() {
 function initPalettes() {
   const titlePal   = document.getElementById("title-palette");
   const patternPal = document.getElementById("pattern-palette");
-  const boxPal     = document.getElementById("box-palette");
 
-  COLORS.forEach(color => {
+  COLORS.forEach((color) => {
     // felirat
     const t = makeSwatch(color, () => {
       currentTitleColor = color;
-      document.getElementById("title-text").style.color = color;
+      const tText = document.getElementById("title-text");
+      if (tText) tText.style.color = color;
     });
     titlePal.appendChild(t);
 
@@ -104,17 +112,13 @@ function initPalettes() {
       if (activePattern) applyPatternColor(activePattern, color);
     });
     patternPal.appendChild(p);
-
-    // doboz – fa textúrára égetett szín
-    const b = makeSwatch(color, () => {
-      currentBoxTint = color;
-      applyBoxTint(color);
-    });
-    boxPal.appendChild(b);
   });
 
   // alap feliratszín
-  document.getElementById("title-text").style.color = currentTitleColor;
+  const titleText = document.getElementById("title-text");
+  if (titleText) {
+    titleText.style.color = currentTitleColor;
+  }
 }
 
 function makeSwatch(color, onClick) {
@@ -125,164 +129,190 @@ function makeSwatch(color, onClick) {
   return div;
 }
 
-function hexToRgba(hex, alpha) {
-  let c = hex.replace("#", "");
-  if (c.length === 3) c = c.split("").map(x => x + x).join("");
-  const n = parseInt(c, 16);
-  const r = (n >> 16) & 255;
-  const g = (n >> 8) & 255;
-  const b = n & 255;
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-
-/**
- * Doboz szín alkalmazása fa textúrára:
- * - canvasra rajzoljuk a wood.png-t
- * - multiply módban ráhúzzuk a választott színt
- * - a végeredmény dataURL-ként a #box backgroundImage-e
- * → html2canvas exportban 1:1-ben ezt látjuk viszont
- */
-function applyBoxTint(color) {
-  const box = document.getElementById("box");
-  if (!box) return;
-
-  // ha még nincs kész a fa kép, kap egy sima fa hátteret
-  if (!woodReady || !woodImage || !woodImage.naturalWidth) {
-    box.style.backgroundImage = "url('assets/textures/wood.png')";
-    box.style.backgroundColor = "";
-    return;
-  }
-
-  const w = woodImage.naturalWidth;
-  const h = woodImage.naturalHeight;
-
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-
-  const ctx = canvas.getContext("2d");
-
-  // 1) fa textúra
-  ctx.drawImage(woodImage, 0, 0, w, h);
-
-  // 2) szín ráégetése
-  ctx.globalCompositeOperation = "multiply";
-  ctx.fillStyle = color;
-  ctx.globalAlpha = 0.85;        // intenzitás
-  ctx.fillRect(0, 0, w, h);
-
-  ctx.globalCompositeOperation = "source-over";
-  ctx.globalAlpha = 1;
-
-  const dataURL = canvas.toDataURL("image/png");
-  box.style.backgroundImage = `url(${dataURL})`;
-  box.style.backgroundColor = "";
-}
-
 /*****************************************************************
- * FELIRAT – SZÖVEG, MÉRET, DRAG (PC + MOBIL)
+ * FELIRAT – SZÖVEG, DRAG, SARKOS MÉRETEZÉS
  *****************************************************************/
 function initTitle() {
-  const input = document.getElementById("title-input");
-  const size  = document.getElementById("title-size");
-  const text  = document.getElementById("title-text");
-  const layer = document.getElementById("title-layer");
+  const input     = document.getElementById("title-input");
+  const titleText = document.getElementById("title-text");
+  const titleBox  = document.getElementById("title-box");
+  const sizeInput = document.getElementById("title-size");
+
+  if (!input || !titleText || !titleBox) return;
 
   // szöveg
   input.addEventListener("input", () => {
-    text.textContent = input.value || "Felirat";
+    titleText.textContent = input.value || "Felirat";
+    updateTitleSizeInput();
   });
 
-  // magasság 3–7 cm között
-  size.addEventListener("input", () => {
-    let cm = parseFloat(size.value);
-    if (isNaN(cm)) cm = 4;
-    if (cm < 3) cm = 3;
-    if (cm > 7) cm = 7;
-    size.value = cm;
+  // kezdeti középre igazítás px-ben
+  centerTitleBox();
 
-    const BOX_CM_HEIGHT = 22.5; // 225 mm
-    const box = document.getElementById("box");
-    const boxPxHeight = box.getBoundingClientRect().height;
-
-    const pxPerCm = boxPxHeight / BOX_CM_HEIGHT;
-    const desiredPx = cm * pxPerCm;
-
-    const FONT_CAP_RATIO = 0.7;
-    const fontSizePx = desiredPx / FONT_CAP_RATIO;
-
-    text.style.fontSize = `${fontSizePx}px`;
-  });
-  size.dispatchEvent(new Event("input"));
-
-  // drag – a teljes title-layer-t visszük, de a szöveget fogod
-  let dragState = null;
-
-  // egér
-  text.addEventListener("mousedown", (e) => {
+  // Drag – egér
+  titleText.addEventListener("mousedown", (e) => {
     if (e.button !== 0) return;
     e.preventDefault();
-
-    const transform = getComputedStyle(layer).transform;
-    const matrix = new DOMMatrix(transform === "none" ? undefined : transform);
-
-    dragState = {
-      startX: e.clientX,
-      startY: e.clientY,
-      baseX: matrix.m41,
-      baseY: matrix.m42
-    };
-    text.style.cursor = "grabbing";
+    startTitleDrag(e, titleBox);
   });
 
+  // Drag – touch
+  titleText.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    startTitleDrag(e, titleBox);
+  }, { passive: false });
+
+  // Resize – egér
+  const resizeHandle = titleBox.querySelector(".title-resize");
+  if (resizeHandle) {
+    resizeHandle.addEventListener("mousedown", (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      startTitleResize(e, titleBox);
+    });
+
+    // Resize – touch
+    resizeHandle.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      startTitleResize(e, titleBox);
+    }, { passive: false });
+  }
+
+  // Mozgás – egér
   document.addEventListener("mousemove", (e) => {
-    if (!dragState) return;
-    const dx = e.clientX - dragState.startX;
-    const dy = e.clientY - dragState.startY;
-    const x = dragState.baseX + dx;
-    const y = dragState.baseY + dy;
-    layer.style.transform = `translate(${x}px, ${y}px)`;
+    if (!titleDrag && !titleResize) return;
+    onTitleMove(e);
   });
 
-  document.addEventListener("mouseup", () => {
-    if (!dragState) return;
-    dragState = null;
-    text.style.cursor = "grab";
-  });
-
-  // mobil (touch)
-  text.addEventListener("touchstart", (e) => {
-    const pos = getPointerPosition(e);
-    e.preventDefault();
-
-    const transform = getComputedStyle(layer).transform;
-    const matrix = new DOMMatrix(transform === "none" ? undefined : transform);
-
-    dragState = {
-      startX: pos.x,
-      startY: pos.y,
-      baseX: matrix.m41,
-      baseY: matrix.m42
-    };
-    text.style.cursor = "grabbing";
-  }, { passive: false });
-
+  // Mozgás – touch
   document.addEventListener("touchmove", (e) => {
-    if (!dragState) return;
-    const pos = getPointerPosition(e);
+    if (!titleDrag && !titleResize) return;
+    onTitleMove(e);
     e.preventDefault();
-    const dx = pos.x - dragState.startX;
-    const dy = pos.y - dragState.startY;
-    const x = dragState.baseX + dx;
-    const y = dragState.baseY + dy;
-    layer.style.transform = `translate(${x}px, ${y}px)`;
   }, { passive: false });
 
-  document.addEventListener("touchend", () => {
-    if (!dragState) return;
-    dragState = null;
-    text.style.cursor = "grab";
+  // Felengedés
+  document.addEventListener("mouseup", () => {
+    if (!titleDrag && !titleResize) return;
+    onTitleEnd();
   });
+  document.addEventListener("touchend", () => {
+    if (!titleDrag && !titleResize) return;
+    onTitleEnd();
+  });
+
+  // első méret frissítés
+  setTimeout(updateTitleSizeInput, 200);
+}
+
+/* Felirat középre igazítása */
+function centerTitleBox() {
+  const box = document.getElementById("box");
+  const titleBox = document.getElementById("title-box");
+  if (!box || !titleBox) return;
+
+  const boxRect = box.getBoundingClientRect();
+  const rect    = titleBox.getBoundingClientRect();
+
+  const left = (boxRect.width  - rect.width)  / 2;
+  const top  = (boxRect.height - rect.height) / 2;
+
+  titleBox.style.left = `${left}px`;
+  titleBox.style.top  = `${top}px`;
+  titleBox.style.transform = "none";
+}
+
+/* Drag indítás feliraton */
+function startTitleDrag(e, titleBox) {
+  const pos     = getPointerPosition(e);
+  const box     = document.getElementById("box");
+  const boxRect = box.getBoundingClientRect();
+  const rect    = titleBox.getBoundingClientRect();
+
+  const offsetX = pos.x - rect.left;
+  const offsetY = pos.y - rect.top;
+
+  titleDrag = {
+    boxRect,
+    titleBox,
+    offsetX,
+    offsetY
+  };
+}
+
+/* Resize indítás feliraton (font-size skálázás) */
+function startTitleResize(e, titleBox) {
+  const pos      = getPointerPosition(e);
+  const rect     = titleBox.getBoundingClientRect();
+  const titleText = document.getElementById("title-text");
+  const startFontSize = parseFloat(window.getComputedStyle(titleText).fontSize) || 64;
+
+  titleResize = {
+    startX: pos.x,
+    startY: pos.y,
+    startWidth: rect.width,
+    startFontSize,
+    titleText
+  };
+}
+
+function onTitleMove(e) {
+  const pos = getPointerPosition(e);
+
+  // Drag
+  if (titleDrag) {
+    const { boxRect, titleBox, offsetX, offsetY } = titleDrag;
+
+    const rect = titleBox.getBoundingClientRect();
+    let newLeft = pos.x - boxRect.left - offsetX;
+    let newTop  = pos.y - boxRect.top  - offsetY;
+
+    const maxLeft = boxRect.width  - rect.width;
+    const maxTop  = boxRect.height - rect.height;
+
+    newLeft = clamp(newLeft, 0, maxLeft);
+    newTop  = clamp(newTop, 0, maxTop);
+
+    titleBox.style.left = `${newLeft}px`;
+    titleBox.style.top  = `${newTop}px`;
+  }
+
+  // Resize
+  if (titleResize) {
+    const { startX, startWidth, startFontSize, titleText } = titleResize;
+    const dx     = pos.x - startX;
+    const factor = (startWidth + dx) / startWidth;
+    const scale  = Math.max(0.3, factor);
+
+    const newFont = clamp(startFontSize * scale, 10, 200);
+    titleText.style.fontSize = `${newFont}px`;
+
+    updateTitleSizeInput();
+  }
+}
+
+function onTitleEnd() {
+  titleDrag = null;
+  titleResize = null;
+  updateTitleSizeInput();
+}
+
+/* Felirat magasság cm-ben (csak kijelzés + CSV) */
+function updateTitleSizeInput() {
+  const sizeInput = document.getElementById("title-size");
+  const box       = document.getElementById("box");
+  const titleBox  = document.getElementById("title-box");
+  if (!sizeInput || !box || !titleBox) return;
+
+  const boxRect   = box.getBoundingClientRect();
+  const titleRect = titleBox.getBoundingClientRect();
+
+  const BOX_CM_HEIGHT = 22.5; // 225 mm
+
+  const hCm = (titleRect.height / boxRect.height) * BOX_CM_HEIGHT;
+  sizeInput.value = hCm.toFixed(1);
 }
 
 /*****************************************************************
@@ -309,8 +339,10 @@ function initPatterns() {
       if (!img) return;
 
       try {
-        const svgText = await loadSvgAsText(img.src);
-        addPatternFromSvg(svgText);
+        const src = img.getAttribute("src");
+        const alt = img.getAttribute("alt") || "";
+        const svgText = await loadSvgAsText(src);
+        addPatternFromSvg(svgText, { src, alt });
       } catch (err) {
         console.error("SVG betöltési hiba:", err);
         alert(
@@ -382,13 +414,17 @@ async function loadSvgAsText(url) {
 }
 
 /** Új minta létrehozása egy SVG szövegből */
-function addPatternFromSvg(svgText) {
+function addPatternFromSvg(svgText, meta = {}) {
   const layer = document.getElementById("patterns-layer");
   const layerRect = layer.getBoundingClientRect();
 
   const el = document.createElement("div");
   el.className = "pattern";
   el.innerHTML = svgText;
+
+  // meta adatok CSV-hez
+  el.dataset.src = meta.src || "";
+  el.dataset.alt = meta.alt || "";
 
   // resize fogantyú
   const handle = document.createElement("div");
@@ -420,7 +456,7 @@ function setActivePattern(el) {
 }
 
 /**
- * Mintaszín alkalmazása az SVG-n belül.
+ * Mintaszín alkalmazása az SVG-n belül + dataset.color beállítása.
  */
 function applyPatternColor(patternEl, color) {
   const svg = patternEl.querySelector("svg");
@@ -450,6 +486,8 @@ function applyPatternColor(patternEl, color) {
       `fill:${color}`
     );
   }
+
+  patternEl.dataset.color = color;
 }
 
 /* -------- DRAG (EGYBEN PC + MOBILRA) -------- */
@@ -508,10 +546,9 @@ function onPatternMove(e) {
 
   // resize
   if (patternResize) {
-    const { pattern, startX, startY, startWidth, aspect } = patternResize;
+    const { pattern, startX, startWidth, aspect } = patternResize;
     const dx = pos.x - startX;
-    const dy = pos.y - startY;
-    const delta = Math.max(dx, dy);
+    const delta = Math.max(dx, 0); // csak növelés, ha akarod bidirekciósat, vedd ki ezt
 
     let newWidth = startWidth + delta;
     newWidth = clamp(newWidth, MIN_PATTERN, MAX_PATTERN);
@@ -578,7 +615,10 @@ function copyActivePattern() {
   clipboardPattern = {
     svg: svg.outerHTML,
     width: activePattern.offsetWidth,
-    height: activePattern.offsetHeight
+    height: activePattern.offsetHeight,
+    alt: activePattern.dataset.alt || "",
+    src: activePattern.dataset.src || "",
+    color: activePattern.dataset.color || ""
   };
 }
 
@@ -590,6 +630,9 @@ function pastePattern() {
   const el = document.createElement("div");
   el.className = "pattern";
   el.innerHTML = clipboardPattern.svg;
+
+  el.dataset.alt = clipboardPattern.alt || "";
+  el.dataset.src = clipboardPattern.src || "";
 
   const handle = document.createElement("div");
   handle.className = "resize-handle";
@@ -610,23 +653,32 @@ function pastePattern() {
   el.style.top  = baseTop + "px";
 
   layer.appendChild(el);
+
+  if (clipboardPattern.color) {
+    applyPatternColor(el, clipboardPattern.color);
+  } else {
+    applyPatternColor(el, currentPatternColor);
+  }
+
   setActivePattern(el);
 }
 
 /*****************************************************************
- * PNG EXPORT – fa textúrával ÉS dobozszínnel együtt (canvas-baked)
+ * PNG EXPORT – natúr fa háttérrel együtt
  *****************************************************************/
 function initExport() {
   const btn = document.getElementById("export-btn");
   const box = document.getElementById("box");
+  if (!btn || !box) return;
 
   btn.addEventListener("click", async () => {
-    try {
-      // 1) Aktív minta keretének elrejtése export idejére
-      const prevActive = document.querySelector(".pattern.active");
-      document.querySelectorAll(".pattern").forEach(p => p.classList.remove("active"));
+    let prevActive = document.querySelector(".pattern.active");
 
-      // 2) Render
+    // Aktív minta keretének elrejtése export idejére
+    document.querySelectorAll(".pattern").forEach(p => p.classList.remove("active"));
+    document.body.classList.add("exporting");
+
+    try {
       const canvas = await html2canvas(box, {
         scale: 2,
         useCORS: true,
@@ -634,18 +686,115 @@ function initExport() {
         logging: false
       });
 
-      // 3) Aktív minta vissza
-      if (prevActive) prevActive.classList.add("active");
-
-      // 4) Letöltés
       const link = document.createElement("a");
       link.href = canvas.toDataURL("image/png");
-      link.download = "emlekdoboz.png";
+      link.download = "emlekdoboz_terv.png";
       link.click();
-
     } catch (err) {
       console.error("Export hiba:", err);
       alert("Hiba történt a PNG export során.");
+    } finally {
+      document.body.classList.remove("exporting");
+      if (prevActive) prevActive.classList.add("active");
     }
   });
+}
+
+/*****************************************************************
+ * CSV EXPORT – felirat + minták méretei, színei
+ *****************************************************************/
+function initCsvExport() {
+  const btn = document.getElementById("export-csv-btn");
+  const box = document.getElementById("box");
+  if (!btn || !box) return;
+
+  btn.addEventListener("click", () => {
+    const boxRect = box.getBoundingClientRect();
+
+    const BOX_CM_WIDTH  = 31.0; // 310 mm
+    const BOX_CM_HEIGHT = 22.5; // 225 mm
+
+    const pxToCmW = BOX_CM_WIDTH  / boxRect.width;
+    const pxToCmH = BOX_CM_HEIGHT / boxRect.height;
+
+    const rows = [];
+    rows.push("Típus;Név;Szélesség (cm);Magasság (cm);Szín (hex);Szín (név)");
+
+    // Felirat
+    const titleBox  = document.getElementById("title-box");
+    const titleRect = titleBox.getBoundingClientRect();
+    const titleInput = document.getElementById("title-input");
+
+    const titleWcm = (titleRect.width  * pxToCmW).toFixed(2);
+    const titleHcm = (titleRect.height * pxToCmH).toFixed(2);
+
+    const titleHex = normalizeHex(currentTitleColor);
+    const titleName = colorNameFromHex(titleHex);
+
+    rows.push([
+      "Felirat",
+      csvEscape(titleInput.value || "Felirat"),
+      titleWcm.replace(".", ","),
+      titleHcm.replace(".", ","),
+      titleHex,
+      titleName
+    ].join(";"));
+
+    // Minták
+    const patterns = document.querySelectorAll("#patterns-layer .pattern");
+    patterns.forEach((patternEl, idx) => {
+      const rect = patternEl.getBoundingClientRect();
+      const wCm  = (rect.width  * pxToCmW).toFixed(2);
+      const hCm  = (rect.height * pxToCmH).toFixed(2);
+
+      const hexRaw = patternEl.dataset.color || currentPatternColor;
+      const hex    = normalizeHex(hexRaw);
+      const name   = colorNameFromHex(hex);
+
+      const label  = patternEl.dataset.alt || `Minta ${idx + 1}`;
+
+      rows.push([
+        "Minta",
+        csvEscape(label),
+        wCm.replace(".", ","),
+        hCm.replace(".", ","),
+        hex,
+        name
+      ].join(";"));
+    });
+
+    const csvContent = rows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "emlekdoboz_meretek.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  });
+}
+
+/* Segédfüggvények CSV-hez */
+
+function normalizeHex(hex) {
+  if (!hex) return "";
+  let h = String(hex).trim();
+  if (!h.startsWith("#")) return h.toLowerCase();
+  return h.toLowerCase();
+}
+
+function colorNameFromHex(hex) {
+  hex = normalizeHex(hex);
+  return COLOR_NAMES[hex] || hex;
+}
+
+function csvEscape(text) {
+  const t = String(text || "");
+  if (t.includes(";") || t.includes('"')) {
+    return '"' + t.replace(/"/g, '""') + '"';
+  }
+  return t;
 }
