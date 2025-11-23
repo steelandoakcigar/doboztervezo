@@ -77,6 +77,7 @@ function preloadWoodTexture() {
   woodImage.src = "assets/textures/wood.png";
   woodImage.onload = () => {
     woodReady = true;
+    // ha már van alap szín, ráégetjük
     applyBoxTint(currentBoxTint);
   };
 }
@@ -124,13 +125,28 @@ function makeSwatch(color, onClick) {
   return div;
 }
 
-/*****************************************************************
- * DOBOZ SZÍNE FA TEXTÚRÁN
- *****************************************************************/
+function hexToRgba(hex, alpha) {
+  let c = hex.replace("#", "");
+  if (c.length === 3) c = c.split("").map(x => x + x).join("");
+  const n = parseInt(c, 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/**
+ * Doboz szín alkalmazása fa textúrára:
+ * - canvasra rajzoljuk a wood.png-t
+ * - multiply módban ráhúzzuk a választott színt
+ * - a végeredmény dataURL-ként a #box backgroundImage-e
+ * → html2canvas exportban 1:1-ben ezt látjuk viszont
+ */
 function applyBoxTint(color) {
   const box = document.getElementById("box");
   if (!box) return;
 
+  // ha még nincs kész a fa kép, kap egy sima fa hátteret
   if (!woodReady || !woodImage || !woodImage.naturalWidth) {
     box.style.backgroundImage = "url('assets/textures/wood.png')";
     box.style.backgroundColor = "";
@@ -146,11 +162,13 @@ function applyBoxTint(color) {
 
   const ctx = canvas.getContext("2d");
 
+  // 1) fa textúra
   ctx.drawImage(woodImage, 0, 0, w, h);
 
+  // 2) szín ráégetése
   ctx.globalCompositeOperation = "multiply";
   ctx.fillStyle = color;
-  ctx.globalAlpha = 0.85;
+  ctx.globalAlpha = 0.85;        // intenzitás
   ctx.fillRect(0, 0, w, h);
 
   ctx.globalCompositeOperation = "source-over";
@@ -162,7 +180,7 @@ function applyBoxTint(color) {
 }
 
 /*****************************************************************
- * FELIRAT – SZÖVEG, MÉRET, DRAG
+ * FELIRAT – SZÖVEG, MÉRET, DRAG (PC + MOBIL)
  *****************************************************************/
 function initTitle() {
   const input = document.getElementById("title-input");
@@ -281,7 +299,7 @@ function initPatternCategories() {
 }
 
 /*****************************************************************
- * MINTÁK – SAJÁT SVG FÁJLOKBÓL
+ * MINTÁK – SAJÁT SVG FÁJLOKBÓL (PC + MOBIL DRAG/RESIZE)
  *****************************************************************/
 function initPatterns() {
   // Mintagombok: a bennük lévő <img> src az igazi SVG útvonal
@@ -306,7 +324,7 @@ function initPatterns() {
 
   const layer = document.getElementById("patterns-layer");
 
-  // drag / resize indítása – egér
+  // PC: drag / resize indítása
   layer.addEventListener("mousedown", (e) => {
     if (e.button !== 0) return;
 
@@ -324,7 +342,7 @@ function initPatterns() {
     e.preventDefault();
   });
 
-  // drag / resize indítása – touch
+  // MOBIL: drag / resize indítása
   layer.addEventListener("touchstart", (e) => {
     const pattern = e.target.closest(".pattern");
     if (!pattern) return;
@@ -340,6 +358,7 @@ function initPatterns() {
     e.preventDefault();
   }, { passive: false });
 
+  // Mozgatás – mindkét inputtípus
   document.addEventListener("mousemove", onPatternMove);
   document.addEventListener("touchmove", (e) => {
     onPatternMove(e);
@@ -348,6 +367,7 @@ function initPatterns() {
     }
   }, { passive: false });
 
+  // Felengedés – mindkét inputtípus
   document.addEventListener("mouseup", onPatternUp);
   document.addEventListener("touchend", onPatternUp);
 }
@@ -602,9 +622,11 @@ function initExport() {
 
   btn.addEventListener("click", async () => {
     try {
+      // 1) Aktív minta keretének elrejtése export idejére
       const prevActive = document.querySelector(".pattern.active");
       document.querySelectorAll(".pattern").forEach(p => p.classList.remove("active"));
 
+      // 2) Render
       const canvas = await html2canvas(box, {
         scale: 2,
         useCORS: true,
@@ -612,8 +634,10 @@ function initExport() {
         logging: false
       });
 
+      // 3) Aktív minta vissza
       if (prevActive) prevActive.classList.add("active");
 
+      // 4) Letöltés
       const link = document.createElement("a");
       link.href = canvas.toDataURL("image/png");
       link.download = "emlekdoboz.png";
@@ -625,4 +649,3 @@ function initExport() {
     }
   });
 }
-
