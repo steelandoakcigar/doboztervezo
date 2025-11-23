@@ -324,13 +324,24 @@ function setTitleHeightCm(cm) {
   const pxPerCm       = boxRect.height / BOX_CM_HEIGHT;
   const desiredHeight = cm * pxPerCm;
 
-  // AlwaysInMyHeart-nál gyakorlatilag a font-size ≈ vizuális magasság
-  const fontSizePx     = desiredHeight;
+  // --- KALIBRÁCIÓ: megnézzük, hány px magas a titleBox 100px-es fonttal ---
+  const prevFontSize = titleText.style.fontSize || "";
+  titleText.style.fontSize = "100px";
 
+  // force layout
+  const calibRect = titleBox.getBoundingClientRect();
+  const alpha     = calibRect.height / 100;     // ennyi px magasság jut 1px font-size-ra
+
+  // kiszámoljuk a szükséges fontméretet, hogy a dobozmagasság = desiredHeight legyen
+  const fontSizePx = desiredHeight / alpha;
+
+  // végleges méret beállítása
   titleText.style.fontSize = `${fontSizePx}px`;
 
+  // majd frissítjük a kijelzett cm értéket
   updateTitleSizeInput();
 }
+
 
 /* Felirat magasság cm-ben (csak kijelzés + CSV) */
 function updateTitleSizeInput() {
