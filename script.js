@@ -24,20 +24,20 @@ const COLORS = [
 
 /* Színnevek CSV-hez (hex → név) */
 const COLOR_NAMES = {
-  "#e6e3dd": "natúr fehér",
-  "#6e849b": "kékesszürke",
-  "#0f94a0": "türkiz",
-  "#0f4e8a": "mélykék",
-  "#232324": "antracit",
-  "#7b5a48": "dióbarna",
-  "#c6b49a": "bézs",
-  "#72653b": "olívazöld",
-  "#9aad8d": "fakó zöld",
-  "#3b6f3f": "mély zöld",
-  "#76b46a": "világos zöld",
-  "#c8a229": "mustársárga",
-  "#c57e86": "piszkos rózsaszín",
-  "#8e6db3": "levendula lila"
+  "#e6e3dd": "Natúr fehér",
+  "#6e849b": "Kék-szürke",
+  "#0f94a0": "Türkiz kék",
+  "#0f4e8a": "Antik kék",
+  "#232324": "Natúr fekete",
+  "#7b5a48": "Gesztenyebarna",
+  "#c6b49a": "Homok barna",
+  "#72653b": "Olívazöld",
+  "#9aad8d": "Vintage zöld",
+  "#3b6f3f": "Katonazöld",
+  "#76b46a": "Zöldalma",
+  "#c8a229": "Mustársárga",
+  "#c57e86": "Antik rózsaszín",
+  "#8e6db3": "Levendula"
 };
 
 const MIN_PATTERN = 80;
