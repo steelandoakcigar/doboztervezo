@@ -32,6 +32,7 @@ let patternDrag      = null;
 let patternResize    = null;
 let clipboardPattern = null;
 
+// fa textúra a “bázis” színhez
 let woodImage = null;
 let woodReady = false;
 
@@ -89,18 +90,21 @@ function initPalettes() {
   const boxPal     = document.getElementById("box-palette");
 
   COLORS.forEach(color => {
+    // felirat
     const t = makeSwatch(color, () => {
       currentTitleColor = color;
       document.getElementById("title-text").style.color = color;
     });
     titlePal.appendChild(t);
 
+    // minták
     const p = makeSwatch(color, () => {
       currentPatternColor = color;
       if (activePattern) applyPatternColor(activePattern, color);
     });
     patternPal.appendChild(p);
 
+    // doboz – fa textúrára égetett szín
     const b = makeSwatch(color, () => {
       currentBoxTint = color;
       applyBoxTint(color);
@@ -108,6 +112,7 @@ function initPalettes() {
     boxPal.appendChild(b);
   });
 
+  // alap feliratszín
   document.getElementById("title-text").style.color = currentTitleColor;
 }
 
@@ -165,10 +170,12 @@ function initTitle() {
   const text  = document.getElementById("title-text");
   const layer = document.getElementById("title-layer");
 
+  // szöveg
   input.addEventListener("input", () => {
     text.textContent = input.value || "Felirat";
   });
 
+  // magasság 3–7 cm között
   size.addEventListener("input", () => {
     let cm = parseFloat(size.value);
     if (isNaN(cm)) cm = 4;
@@ -176,7 +183,7 @@ function initTitle() {
     if (cm > 7) cm = 7;
     size.value = cm;
 
-    const BOX_CM_HEIGHT = 22.5;
+    const BOX_CM_HEIGHT = 22.5; // 225 mm
     const box = document.getElementById("box");
     const boxPxHeight = box.getBoundingClientRect().height;
 
@@ -190,6 +197,7 @@ function initTitle() {
   });
   size.dispatchEvent(new Event("input"));
 
+  // drag – a teljes title-layer-t visszük, de a szöveget fogod
   let dragState = null;
 
   // egér
@@ -224,7 +232,7 @@ function initTitle() {
     text.style.cursor = "grab";
   });
 
-  // touch
+  // mobil (touch)
   text.addEventListener("touchstart", (e) => {
     const pos = getPointerPosition(e);
     e.preventDefault();
@@ -260,7 +268,7 @@ function initTitle() {
 }
 
 /*****************************************************************
- * MINTA KATEGÓRIÁK
+ * MINTA KATEGÓRIÁK – NYILAS ÖSSZECSUKÁS
  *****************************************************************/
 function initPatternCategories() {
   document.querySelectorAll(".pattern-category").forEach(cat => {
@@ -273,9 +281,10 @@ function initPatternCategories() {
 }
 
 /*****************************************************************
- * MINTÁK – SVG-BŐL, DRAG + RESIZE (PC + MOBIL)
+ * MINTÁK – SAJÁT SVG FÁJLOKBÓL
  *****************************************************************/
 function initPatterns() {
+  // Mintagombok: a bennük lévő <img> src az igazi SVG útvonal
   document.querySelectorAll(".pattern-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const img = btn.querySelector("img");
@@ -297,7 +306,7 @@ function initPatterns() {
 
   const layer = document.getElementById("patterns-layer");
 
-  // egér
+  // drag / resize indítása – egér
   layer.addEventListener("mousedown", (e) => {
     if (e.button !== 0) return;
 
@@ -315,7 +324,7 @@ function initPatterns() {
     e.preventDefault();
   });
 
-  // touch
+  // drag / resize indítása – touch
   layer.addEventListener("touchstart", (e) => {
     const pattern = e.target.closest(".pattern");
     if (!pattern) return;
@@ -343,6 +352,7 @@ function initPatterns() {
   document.addEventListener("touchend", onPatternUp);
 }
 
+/** SVG betöltése szövegként (ugyanarról a domainről) */
 async function loadSvgAsText(url) {
   const res = await fetch(url);
   if (!res.ok) {
@@ -351,6 +361,7 @@ async function loadSvgAsText(url) {
   return await res.text();
 }
 
+/** Új minta létrehozása egy SVG szövegből */
 function addPatternFromSvg(svgText) {
   const layer = document.getElementById("patterns-layer");
   const layerRect = layer.getBoundingClientRect();
@@ -359,14 +370,17 @@ function addPatternFromSvg(svgText) {
   el.className = "pattern";
   el.innerHTML = svgText;
 
+  // resize fogantyú
   const handle = document.createElement("div");
   handle.className = "resize-handle";
   el.appendChild(handle);
 
+  // alapméret
   const baseSize = 120;
   el.style.width  = baseSize + "px";
   el.style.height = baseSize + "px";
 
+  // középre
   const left = (layerRect.width  - baseSize) / 2;
   const top  = (layerRect.height - baseSize) / 2;
   el.style.left = `${left}px`;
@@ -374,6 +388,7 @@ function addPatternFromSvg(svgText) {
 
   layer.appendChild(el);
 
+  // aktuális mintaszín rákényszerítése
   applyPatternColor(el, currentPatternColor);
   setActivePattern(el);
 }
@@ -384,6 +399,9 @@ function setActivePattern(el) {
   if (el) el.classList.add("active");
 }
 
+/**
+ * Mintaszín alkalmazása az SVG-n belül.
+ */
 function applyPatternColor(patternEl, color) {
   const svg = patternEl.querySelector("svg");
   if (!svg) return;
@@ -414,7 +432,7 @@ function applyPatternColor(patternEl, color) {
   }
 }
 
-/* DRAG + RESIZE – közös logika */
+/* -------- DRAG (EGYBEN PC + MOBILRA) -------- */
 
 function startPatternDrag(e, pattern) {
   const pos = getPointerPosition(e);
@@ -433,6 +451,8 @@ function startPatternDrag(e, pattern) {
   };
 }
 
+/* -------- RESIZE (EGYBEN PC + MOBILRA) -------- */
+
 function startPatternResize(e, pattern) {
   const pos = getPointerPosition(e);
   const rect = pattern.getBoundingClientRect();
@@ -449,6 +469,7 @@ function startPatternResize(e, pattern) {
 function onPatternMove(e) {
   const pos = getPointerPosition(e);
 
+  // drag
   if (patternDrag) {
     const { pattern, layerRect, offsetX, offsetY } = patternDrag;
 
@@ -465,6 +486,7 @@ function onPatternMove(e) {
     pattern.style.top  = `${newTop}px`;
   }
 
+  // resize
   if (patternResize) {
     const { pattern, startX, startY, startWidth, aspect } = patternResize;
     const dx = pos.x - startX;
@@ -500,18 +522,21 @@ function initShortcuts() {
     const tag = (e.target && e.target.tagName || "").toLowerCase();
     if (tag === "input" || tag === "textarea") return;
 
+    // törlés – Delete / Backspace
     if ((e.key === "Delete" || e.key === "Backspace") && activePattern) {
       e.preventDefault();
       deleteActivePattern();
       return;
     }
 
+    // Ctrl+C – másolás
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c" && activePattern) {
       e.preventDefault();
       copyActivePattern();
       return;
     }
 
+    // Ctrl+V – beillesztés
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v" && clipboardPattern) {
       e.preventDefault();
       pastePattern();
@@ -569,7 +594,7 @@ function pastePattern() {
 }
 
 /*****************************************************************
- * PNG EXPORT
+ * PNG EXPORT – fa textúrával ÉS dobozszínnel együtt (canvas-baked)
  *****************************************************************/
 function initExport() {
   const btn = document.getElementById("export-btn");

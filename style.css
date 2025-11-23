@@ -26,7 +26,7 @@ html, body {
 
 #app {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
 }
 
 /* Sidebar */
@@ -97,7 +97,7 @@ html, body {
   color: #555;
 }
 
-/* Minták – kategóriák és ikonrács */
+/* Minták – kategóriák és ikonrács az oldalsávban */
 
 .pattern-category {
   margin-bottom: 16px;
@@ -139,7 +139,7 @@ html, body {
   gap: 6px;
 }
 
-/* Mintagombok */
+/* Mintagombok az oldalsávban */
 
 .pattern-btn {
   width: 100%;
@@ -158,6 +158,7 @@ html, body {
   max-width: 85%;
   max-height: 85%;
   object-fit: contain;
+  /* Mindig fekete ikon előnézet */
   filter: brightness(0) saturate(100%);
 }
 
@@ -254,24 +255,24 @@ html, body {
   max-height: calc(100% - 40px);
 }
 
-/* A4 doboz – fa + szín a backgroundImage-ben
-   FONTOS: a szélesség MOST már a rendelkezésre álló helyet használja,
-   nem a teljes viewportot → nem fog kilógni mobilon sem. */
+/* A4 doboz – fa + szín a backgroundImage-ben */
 
 #box {
   position: relative;
-  width: min(100%, 900px);
+  width: min(70vw, 900px);
   aspect-ratio: 310 / 225;
   margin: 0 auto;
   border-radius: 0;
   overflow: hidden;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+
+  /* alap fa háttér, amíg a JS rá nem égeti a színt */
   background-image: url("assets/textures/wood.png");
   background-size: cover;
   background-position: center;
 }
 
-/* Rétegek */
+/* Rétegek sorrendje */
 
 #patterns-layer {
   position: absolute;
@@ -286,7 +287,7 @@ html, body {
   display: flex;
   justify-content: center;
   align-items: center;
-  pointer-events: none;
+  pointer-events: none; /* csak a szöveg fogható */
   z-index: 3;
 }
 
@@ -328,11 +329,11 @@ html, body {
   border: 2px solid #232324;
   background: #ffffff;
   cursor: se-resize;
-  display: none;
+  display: none;              /* alapból NEM látszik */
 }
 
 .pattern.active .resize-handle {
-  display: block;
+  display: block;             /* csak az aktív mintán jelenik meg */
 }
 
 /* Mobilon ne scrollozzon, ha a dobozon húzunk valamit */
@@ -343,15 +344,19 @@ html, body {
   touch-action: none;
 }
 
-/* Reszponzív – kisebb kijelzők */
+/* Reszponzív */
 
 @media (max-width: 900px) {
   .sidebar {
-    width: 260px;
-    min-width: 260px;
-    padding: 12px 10px;
+    width: 280px;
+    min-width: 280px;
   }
 
+  #box {
+    width: min(65vw, 720px);
+  }
+
+  /* nagyobb resize fogantyú mobilon */
   .pattern .resize-handle {
     width: 20px;
     height: 20px;
