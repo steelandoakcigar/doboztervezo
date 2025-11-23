@@ -1,9 +1,10 @@
-
 /*****************************************************************
  * EMLÉKDOBOZ TERVEZŐ – EXAKT SVG + SZÍNEZÉS + BŐVÍTETT FUNKCIÓK
  * - Felirat drag + sarkos fogantyúval méretezés (mobil + PC)
  * - Felirat magassága cm-ben kiírva (csak kijelzés, readonly)
+ * - Felirat induló valós magassága: 4 cm
  * - Minták: icons/*.svg fájlokból (valódi gyártási minták)
+ * - Minták induló valós magassága: 4 cm (viewBox arány szerint)
  * - Minták drag + resize (nem ugrik)
  * - Minták színe: palettáról állítható (fill/style felülírva)
  * - Doboz: fix natúr fa háttér (NEM színezhető)
@@ -11,7 +12,7 @@
  * - Ctrl+C / Ctrl+V minta duplikálás
  * - Összecsukható mintakategóriák (nyilas header)
  * - PNG export: fogantyúk és aktív keretek NEM látszanak
- * - CSV export: felirat + minták méretei és színei, színnévvel
+ * - CSV export: felirat + minták valós gyártási méretei és színei
  * - TELJESEN MOBILKOMPATIBILIS (touch + mouse)
  *****************************************************************/
 
@@ -22,7 +23,7 @@ const COLORS = [
   "#c57e86", "#8e6db3"
 ];
 
-/* Színnevek CSV-hez (hex → név) */
+/* Színnevek CSV-hez (hex → név) – PintyPlus paletta szerint */
 const COLOR_NAMES = {
   "#e6e3dd": "Natúr fehér",
   "#6e849b": "Kék-szürke",
@@ -140,7 +141,13 @@ function initTitle() {
 
   if (!input || !titleText || !titleBox) return;
 
-  // szöveg
+  // induló felirat szöveg
+  if (!input.value) {
+    input.value = "Felirat";
+    titleText.textContent = "Felirat";
+  }
+
+  // szöveg változás
   input.addEventListener("input", () => {
     titleText.textContent = input.value || "Felirat";
     updateTitleSizeInput();
@@ -203,8 +210,10 @@ function initTitle() {
     onTitleEnd();
   });
 
-  // első méret frissítés
-  setTimeout(updateTitleSizeInput, 200);
+  // induláskor: kb. 4 cm magas felirat (valós gyártási cm-ben)
+  setTimeout(() => {
+    setTitleHeightCm(4);
+  }, 80);
 }
 
 /* Felirat középre igazítása */
@@ -296,6 +305,28 @@ function onTitleMove(e) {
 function onTitleEnd() {
   titleDrag = null;
   titleResize = null;
+  updateTitleSizeInput();
+}
+
+/* Célzott feliratmagasság beállítása cm-ben (valós méret, A4 310×225) */
+function setTitleHeightCm(cm) {
+  const box       = document.getElementById("box");
+  const titleBox  = document.getElementById("title-box");
+  const titleText = document.getElementById("title-text");
+  if (!box || !titleBox || !titleText) return;
+
+  const BOX_CM_HEIGHT = 22.5; // 225 mm
+  const boxRect       = box.getBoundingClientRect();
+
+  const pxPerCm       = boxRect.height / BOX_CM_HEIGHT;
+  const desiredHeight = cm * pxPerCm;
+
+  // A nagybetűk kb. a font-size 70%-a
+  const FONT_CAP_RATIO = 0.7;
+  const fontSizePx     = desiredHeight / FONT_CAP_RATIO;
+
+  titleText.style.fontSize = `${fontSizePx}px`;
+
   updateTitleSizeInput();
 }
 
@@ -413,10 +444,12 @@ async function loadSvgAsText(url) {
   return await res.text();
 }
 
-/** Új minta létrehozása egy SVG szövegből */
+/** Új minta létrehozása egy SVG szövegből – induló valós magasság: 4 cm */
 function addPatternFromSvg(svgText, meta = {}) {
   const layer = document.getElementById("patterns-layer");
   const layerRect = layer.getBoundingClientRect();
+  const box = document.getElementById("box");
+  const boxRect = box.getBoundingClientRect();
 
   const el = document.createElement("div");
   el.className = "pattern";
@@ -426,21 +459,38 @@ function addPatternFromSvg(svgText, meta = {}) {
   el.dataset.src = meta.src || "";
   el.dataset.alt = meta.alt || "";
 
+  // SVG arány a viewBox-ból
+  const svg = el.querySelector("svg");
+  let aspect = 1;
+  if (svg && svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.height) {
+    const vb = svg.viewBox.baseVal;
+    if (vb.height !== 0) {
+      aspect = vb.width / vb.height;
+    }
+  }
+
+  // doboz valós mérete: 31×22.5 cm → px/cm
+  const BOX_CM_HEIGHT = 22.5;
+  const pxPerCmH = boxRect.height / BOX_CM_HEIGHT;
+
+  // induló valós magasság 4 cm
+  const baseHeightPx = 4 * pxPerCmH;
+  let heightPx = clamp(baseHeightPx, MIN_PATTERN, MAX_PATTERN);
+  let widthPx  = heightPx * aspect;
+
+  el.style.width  = `${widthPx}px`;
+  el.style.height = `${heightPx}px`;
+
+  // középre igazítás az aktuális mérettekkel
+  const left = (layerRect.width  - widthPx)  / 2;
+  const top  = (layerRect.height - heightPx) / 2;
+  el.style.left = `${left}px`;
+  el.style.top  = `${top}px`;
+
   // resize fogantyú
   const handle = document.createElement("div");
   handle.className = "resize-handle";
   el.appendChild(handle);
-
-  // alapméret
-  const baseSize = 120;
-  el.style.width  = baseSize + "px";
-  el.style.height = baseSize + "px";
-
-  // középre
-  const left = (layerRect.width  - baseSize) / 2;
-  const top  = (layerRect.height - baseSize) / 2;
-  el.style.left = `${left}px`;
-  el.style.top  = `${top}px`;
 
   layer.appendChild(el);
 
@@ -548,7 +598,7 @@ function onPatternMove(e) {
   if (patternResize) {
     const { pattern, startX, startWidth, aspect } = patternResize;
     const dx = pos.x - startX;
-    const delta = Math.max(dx, 0); // csak növelés, ha akarod bidirekciósat, vedd ki ezt
+    const delta = dx; // kétirányú méretezés, ha csak növelés kell: Math.max(dx, 0)
 
     let newWidth = startWidth + delta;
     newWidth = clamp(newWidth, MIN_PATTERN, MAX_PATTERN);
@@ -701,7 +751,7 @@ function initExport() {
 }
 
 /*****************************************************************
- * CSV EXPORT – felirat + minták méretei, színei
+ * CSV EXPORT – felirat + minták valós gyártási méretei
  *****************************************************************/
 function initCsvExport() {
   const btn = document.getElementById("export-csv-btn");
@@ -721,14 +771,14 @@ function initCsvExport() {
     rows.push("Típus;Név;Szélesség (cm);Magasság (cm);Szín (hex);Szín (név)");
 
     // Felirat
-    const titleBox  = document.getElementById("title-box");
-    const titleRect = titleBox.getBoundingClientRect();
+    const titleBox   = document.getElementById("title-box");
+    const titleRect  = titleBox.getBoundingClientRect();
     const titleInput = document.getElementById("title-input");
 
     const titleWcm = (titleRect.width  * pxToCmW).toFixed(2);
     const titleHcm = (titleRect.height * pxToCmH).toFixed(2);
 
-    const titleHex = normalizeHex(currentTitleColor);
+    const titleHex  = normalizeHex(currentTitleColor);
     const titleName = colorNameFromHex(titleHex);
 
     rows.push([
