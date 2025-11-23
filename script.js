@@ -137,7 +137,6 @@ function initTitle() {
   const input     = document.getElementById("title-input");
   const titleText = document.getElementById("title-text");
   const titleBox  = document.getElementById("title-box");
-  const sizeInput = document.getElementById("title-size");
 
   if (!input || !titleText || !titleBox) return;
 
@@ -156,11 +155,11 @@ function initTitle() {
   // Középre még indulás előtt
   centerTitleBox();
 
-  // *** A LÉNYEG: 2 lépésben állítjuk be az induló 4 cm magasságot ***
+  // Induló 4 cm magas felirat – két render ciklus után, hogy biztos jó legyen a layout
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      setTitleHeightCm(4);   // valós 4 cm magasság
-      centerTitleBox();      // újra középre
+      setTitleHeightCm(4);   // valós 4 cm
+      centerTitleBox();      // méretezés után újra középre
       updateTitleSizeInput();
     });
   });
@@ -218,11 +217,6 @@ function initTitle() {
     if (!titleDrag && !titleResize) return;
     onTitleEnd();
   });
-
-  // induláskor: kb. 4 cm magas felirat (valós gyártási cm-ben)
-  setTimeout(() => {
-    setTitleHeightCm(4);
-  }, 80);
 }
 
 /* Felirat középre igazítása */
@@ -330,9 +324,8 @@ function setTitleHeightCm(cm) {
   const pxPerCm       = boxRect.height / BOX_CM_HEIGHT;
   const desiredHeight = cm * pxPerCm;
 
-  // A nagybetűk kb. a font-size 70%-a
-  const FONT_CAP_RATIO = 0.7;
-  const fontSizePx     = desiredHeight / FONT_CAP_RATIO;
+  // AlwaysInMyHeart-nál gyakorlatilag a font-size ≈ vizuális magasság
+  const fontSizePx     = desiredHeight;
 
   titleText.style.fontSize = `${fontSizePx}px`;
 
@@ -490,7 +483,7 @@ function addPatternFromSvg(svgText, meta = {}) {
   el.style.width  = `${widthPx}px`;
   el.style.height = `${heightPx}px`;
 
-  // középre igazítás az aktuális mérettekkel
+  // középre igazítás az aktuális méretekkel
   const left = (layerRect.width  - widthPx)  / 2;
   const top  = (layerRect.height - heightPx) / 2;
   el.style.left = `${left}px`;
@@ -607,7 +600,7 @@ function onPatternMove(e) {
   if (patternResize) {
     const { pattern, startX, startWidth, aspect } = patternResize;
     const dx = pos.x - startX;
-    const delta = dx; // kétirányú méretezés, ha csak növelés kell: Math.max(dx, 0)
+    const delta = dx;
 
     let newWidth = startWidth + delta;
     newWidth = clamp(newWidth, MIN_PATTERN, MAX_PATTERN);
