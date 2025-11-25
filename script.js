@@ -861,3 +861,45 @@ function csvEscape(text) {
   }
   return t;
 }
+
+/*****************************************************************
+ * MINTA TÜKRÖZÉSE + 90° FORGATÁS
+ *****************************************************************/
+
+function updatePatternTransform(el) {
+  if (!el) return;
+
+  const flip = el.dataset.flip === "true";
+  const rotation = parseInt(el.dataset.rotation || "0", 10);
+
+  const scaleX = flip ? -1 : 1;
+  el.style.transform = `scaleX(${scaleX}) rotate(${rotation}deg)`;
+}
+
+/* Tükrözés gomb */
+const flipBtn = document.getElementById("flip-pattern-btn");
+if (flipBtn) {
+  flipBtn.addEventListener("click", () => {
+    if (!activePattern) return;
+
+    const current = activePattern.dataset.flip === "true";
+    activePattern.dataset.flip = current ? "false" : "true";
+
+    updatePatternTransform(activePattern);
+  });
+}
+
+/* Forgatás gomb (90°-onként) */
+const rotateBtn = document.getElementById("rotate-pattern-btn");
+if (rotateBtn) {
+  rotateBtn.addEventListener("click", () => {
+    if (!activePattern) return;
+
+    const currentRotation = parseInt(activePattern.dataset.rotation || "0", 10);
+    const newRotation = (currentRotation + 90) % 360;
+
+    activePattern.dataset.rotation = String(newRotation);
+
+    updatePatternTransform(activePattern);
+  });
+}
