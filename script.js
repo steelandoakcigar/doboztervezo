@@ -364,8 +364,12 @@ function updateTitleSizeInput() {
  *****************************************************************/
 function initPatternCategories() {
   document.querySelectorAll(".pattern-category").forEach(cat => {
+    // induláskor MIND csukva
+    cat.classList.add("collapsed");
+
     const header = cat.querySelector(".pattern-category-header");
     if (!header) return;
+
     header.addEventListener("click", () => {
       cat.classList.toggle("collapsed");
     });
