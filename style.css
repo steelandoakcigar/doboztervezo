@@ -323,13 +323,15 @@ html, body {
   cursor: se-resize;
 }
 
-/* Minták a dobozon */
+/* Minták a dobozon – gravír jelleg */
 
 .pattern {
   position: absolute;
   cursor: move;
   outline: 1px dashed transparent;
   transform-origin: center center;
+  /* enyhe gravír-hatás */
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
 }
 
 .pattern.active {
@@ -376,7 +378,6 @@ html, body {
 
 /* Mobil adaptív méretezés */
 @media (max-width: 900px) {
-  /* A doboz mindig beleférjen a kijelzőbe */
   #box {
     width: 100vw;
     height: auto;

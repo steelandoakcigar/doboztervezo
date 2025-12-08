@@ -1,20 +1,47 @@
 /*****************************************************************
- * EMLÉKDOBOZ TERVEZŐ – EXAKT SVG + SZÍNEZÉS + BŐVÍTETT FUNKCIÓK
- * - Felirat drag + sarkos fogantyúval méretezés (mobil + PC)
- * - Felirat magassága cm-ben kiírva (csak kijelzés, readonly)
- * - Felirat induló valós magassága: 4 cm
- * - Minták: icons/*.svg fájlokból (valódi gyártási minták)
- * - Minták induló valós magassága: 4 cm (viewBox arány szerint)
- * - Minták drag + resize (nem ugrik)
- * - Minták színe: palettáról állítható (fill/style felülírva)
- * - Doboz: fix natúr fa háttér (NEM színezhető)
- * - Minták törlése: gomb + Delete / Backspace
- * - Ctrl+C / Ctrl+V minta duplikálás
- * - Összecsukható mintakategóriák (nyilas header)
- * - PNG export: fogantyúk és aktív keretek NEM látszanak
- * - CSV export: felirat + minták valós gyártási méretei és színei
- * - TELJESEN MOBILKOMPATIBILIS (touch + mouse)
+ * EMLÉKDOBOZ TERVEZŐ – GRAVÍR-READY VERZIÓ
+ * - Felirat drag + resize (valós 3–7 cm)
+ * - Minták: csak „Ünnepek” kategória (icons/Unnepek/)
+ * - SVG betöltés, drag, resize, színezés
+ * - PNG export (fogantyú nélkül)
+ * - CSV export (méretek + színek)
+ * - Mobil + PC kompatibilis
+ * - Gravír mód előkészítve (maszk + textúraréteg – kommentelve jelölve)
  *****************************************************************/
+
+/* ---------------------- KATEGÓRIÁK -------------------------- */
+
+const ICON_CATEGORIES = [
+  {
+    id: "unnepek",
+    label: "Ünnepek",
+    folder: "icons/Unnepek",
+    icons: [
+      "halloween_tok.svg",
+      "husvet_nyuszi.svg",
+      "husvet_repa.svg",
+      "husvet_tojas.svg",
+      "husvet_tojas2.svg",
+      "kar_hoember.svg",
+      "karacsony_csaladozike.svg",
+      "karacsony_diotoro1.svg",
+      "karacsony_diotoro2.svg",
+      "karacsony_fagyongy.svg",
+      "karacsony_kacsak.svg",
+      "karacsony_maci.svg",
+      "karacsony_mokus.svg",
+      "karacsony_nyaloka.svg",
+      "karacsony_nyuszi.svg",
+      "karacsony_ozike.svg",
+      "karacsony_ozikepar.svg",
+      "karacsony_roka.svg",
+      "karacsony_roka2.svg",
+      "karacsony_szan.svg"
+    ]
+  }
+];
+
+/* ---------------------- SZÍNEK -------------------------- */
 
 const COLORS = [
   "#e6e3dd", "#6e849b", "#0f94a0", "#0f4e8a",
@@ -23,7 +50,6 @@ const COLORS = [
   "#c57e86", "#8e6db3"
 ];
 
-/* Színnevek CSV-hez (hex → név) – PintyPlus paletta szerint */
 const COLOR_NAMES = {
   "#e6e3dd": "Natúr fehér",
   "#6e849b": "Kék-szürke",
@@ -41,41 +67,36 @@ const COLOR_NAMES = {
   "#8e6db3": "Levendula"
 };
 
+let currentTitleColor   = COLORS[4];
+let currentPatternColor = COLORS[5];
+
+/* ---------------------- MINTA LIMIT -------------------------- */
+
 const MIN_PATTERN = 80;
 const MAX_PATTERN = 300;
 
-/* Aktuális színek */
-let currentTitleColor   = COLORS[4]; // felirat
-let currentPatternColor = COLORS[5]; // minták
+/* ---------------------- Általános állapot -------------------------- */
 
-/* Minták állapota */
 let activePattern    = null;
 let patternDrag      = null;
 let patternResize    = null;
 let clipboardPattern = null;
 
-/* Felirat állapota (drag + resize) */
-let titleDrag   = null;
-let titleResize = null;
+let titleDrag        = null;
+let titleResize      = null;
 
 /*****************************************************************
- * KÖZÖS POINTER KEZELÉS (EGÉR + TOUCH)
+ * POINTER KEZELÉS
  *****************************************************************/
-function getPointerPosition(e) {
-  if (e.touches && e.touches.length > 0) {
-    return {
-      x: e.touches[0].clientX,
-      y: e.touches[0].clientY
-    };
+function getPointer(e) {
+  if (e.touches && e.touches.length) {
+    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }
-  return {
-    x: e.clientX,
-    y: e.clientY
-  };
+  return { x: e.clientX, y: e.clientY };
 }
 
-function clamp(v, min, max) {
-  return Math.min(max, Math.max(min, v));
+function clamp(v, a, b) {
+  return Math.min(b, Math.max(a, v));
 }
 
 /*****************************************************************
@@ -84,7 +105,7 @@ function clamp(v, min, max) {
 document.addEventListener("DOMContentLoaded", () => {
   initPalettes();
   initTitle();
-  initPatternCategories();
+  initPatternSidebar();
   initPatterns();
   initShortcuts();
   initExport();
@@ -92,818 +113,483 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /*****************************************************************
- * SZÍNPALETTÁK
+ * SZÍNPALETTÁK INIT
  *****************************************************************/
 function initPalettes() {
-  const titlePal   = document.getElementById("title-palette");
-  const patternPal = document.getElementById("pattern-palette");
+  const tp = document.getElementById("title-palette");
+  const pp = document.getElementById("pattern-palette");
 
-  COLORS.forEach((color) => {
-    // felirat
-    const t = makeSwatch(color, () => {
-      currentTitleColor = color;
-      const tText = document.getElementById("title-text");
-      if (tText) tText.style.color = color;
-    });
-    titlePal.appendChild(t);
+  COLORS.forEach(c => {
 
-    // minták
-    const p = makeSwatch(color, () => {
-      currentPatternColor = color;
-      if (activePattern) applyPatternColor(activePattern, color);
+    // Felirat
+    const t = makeSwatch(c, () => {
+      currentTitleColor = c;
+      document.getElementById("title-text").style.color = c;
     });
-    patternPal.appendChild(p);
+    tp.appendChild(t);
+
+    // Minták
+    const p = makeSwatch(c, () => {
+      currentPatternColor = c;
+      if (activePattern) applyPatternColor(activePattern, c);
+    });
+    pp.appendChild(p);
+
   });
 
-  // alap feliratszín
-  const titleText = document.getElementById("title-text");
-  if (titleText) {
-    titleText.style.color = currentTitleColor;
-  }
+  document.getElementById("title-text").style.color = currentTitleColor;
 }
 
-function makeSwatch(color, onClick) {
-  const div = document.createElement("div");
-  div.className = "color-swatch";
-  div.style.backgroundColor = color;
-  div.addEventListener("click", onClick);
-  return div;
+function makeSwatch(color, cb) {
+  const d = document.createElement("div");
+  d.className = "color-swatch";
+  d.style.backgroundColor = color;
+  d.onclick = cb;
+  return d;
 }
 
 /*****************************************************************
- * FELIRAT – SZÖVEG, DRAG, SARKOS MÉRETEZÉS
+ * FELIRAT INIT
  *****************************************************************/
 function initTitle() {
-  const input     = document.getElementById("title-input");
+  const input = document.getElementById("title-input");
   const titleText = document.getElementById("title-text");
-  const titleBox  = document.getElementById("title-box");
 
-  if (!input || !titleText || !titleBox) return;
+  input.value = "Felirat";
+  titleText.textContent = "Felirat";
 
-  // Alap szöveg
-  if (!input.value) {
-    input.value = "Felirat";
-    titleText.textContent = "Felirat";
-  }
-
-  // Szöveg változás
   input.addEventListener("input", () => {
     titleText.textContent = input.value || "Felirat";
-    updateTitleSizeInput();
+    updateTitleSize();
   });
 
-  // Középre még indulás előtt
-  centerTitleBox();
-
-  // Induló 4 cm magas felirat – két render ciklus után, hogy biztos jó legyen a layout
+  // Induló beállítás
   requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      setTitleHeightCm(4);   // valós 4 cm
-      centerTitleBox();      // méretezés után újra középre
-      updateTitleSizeInput();
-    });
+    setTitleHeightCm(4);
+    updateTitleSize();
   });
 
-  // Drag – egér
-  titleText.addEventListener("mousedown", (e) => {
-    if (e.button !== 0) return;
-    e.preventDefault();
-    startTitleDrag(e, titleBox);
-  });
+  // Drag
+  titleText.addEventListener("mousedown", (e) => startTitleDrag(e));
+  titleText.addEventListener("touchstart", (e) => startTitleDrag(e), { passive: false });
 
-  // Drag – touch
-  titleText.addEventListener("touchstart", (e) => {
-    e.preventDefault();
-    startTitleDrag(e, titleBox);
-  }, { passive: false });
+  // Resize
+  document.querySelector("#title-box .resize-handle")
+    .addEventListener("mousedown", (e) => startTitleResize(e));
+  document.querySelector("#title-box .resize-handle")
+    .addEventListener("touchstart", (e) => startTitleResize(e), { passive: false });
 
-  // Resize – egér
-  const resizeHandle = titleBox.querySelector(".title-resize");
-  if (resizeHandle) {
-    resizeHandle.addEventListener("mousedown", (e) => {
-      if (e.button !== 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-      startTitleResize(e, titleBox);
-    });
-
-    // Resize – touch
-    resizeHandle.addEventListener("touchstart", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      startTitleResize(e, titleBox);
-    }, { passive: false });
-  }
-
-  // Mozgás – egér
-  document.addEventListener("mousemove", (e) => {
-    if (!titleDrag && !titleResize) return;
-    onTitleMove(e);
-  });
-
-  // Mozgás – touch
-  document.addEventListener("touchmove", (e) => {
-    if (!titleDrag && !titleResize) return;
-    onTitleMove(e);
-    e.preventDefault();
-  }, { passive: false });
+  // Mozgatás
+  document.addEventListener("mousemove", (e) => onTitleMove(e));
+  document.addEventListener("touchmove", (e) => { onTitleMove(e); e.preventDefault(); }, { passive: false });
 
   // Felengedés
-  document.addEventListener("mouseup", () => {
-    if (!titleDrag && !titleResize) return;
-    onTitleEnd();
-  });
-  document.addEventListener("touchend", () => {
-    if (!titleDrag && !titleResize) return;
-    onTitleEnd();
-  });
+  document.addEventListener("mouseup", endTitleMove);
+  document.addEventListener("touchend", endTitleMove);
 }
 
-/* Felirat középre igazítása */
-function centerTitleBox() {
+/*****************************************************************
+ * FELIRAT DRAG / RESIZE
+ *****************************************************************/
+function startTitleDrag(e) {
+  const pos = getPointer(e);
   const box = document.getElementById("box");
   const titleBox = document.getElementById("title-box");
-  if (!box || !titleBox) return;
-
-  const boxRect = box.getBoundingClientRect();
-  const rect    = titleBox.getBoundingClientRect();
-
-  const left = (boxRect.width  - rect.width)  / 2;
-  const top  = (boxRect.height - rect.height) / 2;
-
-  titleBox.style.left = `${left}px`;
-  titleBox.style.top  = `${top}px`;
-  titleBox.style.transform = "none";
-}
-
-/* Drag indítás feliraton */
-function startTitleDrag(e, titleBox) {
-  const pos     = getPointerPosition(e);
-  const box     = document.getElementById("box");
-  const boxRect = box.getBoundingClientRect();
-  const rect    = titleBox.getBoundingClientRect();
-
-  const offsetX = pos.x - rect.left;
-  const offsetY = pos.y - rect.top;
+  const r = titleBox.getBoundingClientRect();
+  const b = box.getBoundingClientRect();
 
   titleDrag = {
-    boxRect,
-    titleBox,
-    offsetX,
-    offsetY
+    offsetX: pos.x - r.left,
+    offsetY: pos.y - r.top,
+    boxRect: b,
+    el: titleBox
   };
 }
 
-/* Resize indítás feliraton (font-size skálázás) */
-function startTitleResize(e, titleBox) {
-  const pos      = getPointerPosition(e);
-  const rect     = titleBox.getBoundingClientRect();
+function startTitleResize(e) {
+  const pos = getPointer(e);
   const titleText = document.getElementById("title-text");
-  const startFontSize = parseFloat(window.getComputedStyle(titleText).fontSize) || 64;
+  const box = document.getElementById("title-box");
+  const r = box.getBoundingClientRect();
 
   titleResize = {
     startX: pos.x,
-    startY: pos.y,
-    startWidth: rect.width,
-    startFontSize,
+    startWidth: r.width,
+    startFont: parseFloat(getComputedStyle(titleText).fontSize),
     titleText
   };
 }
 
 function onTitleMove(e) {
-  const pos = getPointerPosition(e);
+  const pos = getPointer(e);
 
   // Drag
   if (titleDrag) {
-    const { boxRect, titleBox, offsetX, offsetY } = titleDrag;
+    const t = titleDrag;
+    const newL = pos.x - t.boxRect.left - t.offsetX;
+    const newT = pos.y - t.boxRect.top - t.offsetY;
 
-    const rect = titleBox.getBoundingClientRect();
-    let newLeft = pos.x - boxRect.left - offsetX;
-    let newTop  = pos.y - boxRect.top  - offsetY;
-
-    const maxLeft = boxRect.width  - rect.width;
-    const maxTop  = boxRect.height - rect.height;
-
-    newLeft = clamp(newLeft, 0, maxLeft);
-    newTop  = clamp(newTop, 0, maxTop);
-
-    titleBox.style.left = `${newLeft}px`;
-    titleBox.style.top  = `${newTop}px`;
+    t.el.style.left = clamp(newL, 0, t.boxRect.width - t.el.offsetWidth) + "px";
+    t.el.style.top  = clamp(newT, 0, t.boxRect.height - t.el.offsetHeight) + "px";
   }
 
   // Resize
   if (titleResize) {
-    const { startX, startWidth, startFontSize, titleText } = titleResize;
-    const dx     = pos.x - startX;
-    const factor = (startWidth + dx) / startWidth;
-    const scale  = Math.max(0.3, factor);
-
-    const newFont = clamp(startFontSize * scale, 10, 200);
-    titleText.style.fontSize = `${newFont}px`;
-
-    updateTitleSizeInput();
+    const r = titleResize;
+    const dx = pos.x - r.startX;
+    const factor = clamp((r.startWidth + dx) / r.startWidth, 0.3, 3);
+    r.titleText.style.fontSize = (r.startFont * factor) + "px";
+    updateTitleSize();
   }
 }
 
-function onTitleEnd() {
+function endTitleMove() {
   titleDrag = null;
   titleResize = null;
-  updateTitleSizeInput();
 }
 
-/* Célzott feliratmagasság beállítása cm-ben (valós méret, A4 310×225) */
+function updateTitleSize() {
+  const box = document.getElementById("box").getBoundingClientRect();
+  const t = document.getElementById("title-box").getBoundingClientRect();
+
+  const cmH = 22.5;
+  document.getElementById("title-size").value =
+    ((t.height / box.height) * cmH).toFixed(1);
+}
+
 function setTitleHeightCm(cm) {
-  const box       = document.getElementById("box");
-  const titleBox  = document.getElementById("title-box");
-  const titleText = document.getElementById("title-text");
-  if (!box || !titleBox || !titleText) return;
+  const box = document.getElementById("box").getBoundingClientRect();
+  const t = document.getElementById("title-text");
+  const cmH = 22.5;
+  const pxPerCm = box.height / cmH;
 
-  const BOX_CM_HEIGHT = 22.5; // 225 mm
-  const boxRect       = box.getBoundingClientRect();
+  const desiredPx = cm * pxPerCm;
 
-  const pxPerCm       = boxRect.height / BOX_CM_HEIGHT;
-  const desiredHeight = cm * pxPerCm;
-
-  // --- KALIBRÁCIÓ: megnézzük, hány px magas a titleBox 100px-es fonttal ---
-  const prevFontSize = titleText.style.fontSize || "";
-  titleText.style.fontSize = "100px";
-
-  // force layout
-  const calibRect = titleBox.getBoundingClientRect();
-  const alpha     = calibRect.height / 100;     // ennyi px magasság jut 1px font-size-ra
-
-  // kiszámoljuk a szükséges fontméretet, hogy a dobozmagasság = desiredHeight legyen
-  const fontSizePx = desiredHeight / alpha;
-
-  // végleges méret beállítása
-  titleText.style.fontSize = `${fontSizePx}px`;
-
-  // majd frissítjük a kijelzett cm értéket
-  updateTitleSizeInput();
-}
-
-
-/* Felirat magasság cm-ben (csak kijelzés + CSV) */
-function updateTitleSizeInput() {
-  const sizeInput = document.getElementById("title-size");
-  const box       = document.getElementById("box");
-  const titleBox  = document.getElementById("title-box");
-  if (!sizeInput || !box || !titleBox) return;
-
-  const boxRect   = box.getBoundingClientRect();
-  const titleRect = titleBox.getBoundingClientRect();
-
-  const BOX_CM_HEIGHT = 22.5; // 225 mm
-
-  const hCm = (titleRect.height / boxRect.height) * BOX_CM_HEIGHT;
-  sizeInput.value = hCm.toFixed(1);
+  t.style.fontSize = (desiredPx / 1.2) + "px";
 }
 
 /*****************************************************************
- * MINTA KATEGÓRIÁK – NYILAS ÖSSZECSUKÁS
+ * OLDALSÁV – CSAK ÜNNEPEK
  *****************************************************************/
-function initPatternCategories() {
+function initPatternSidebar() {
   document.querySelectorAll(".pattern-category").forEach(cat => {
-    // induláskor MIND csukva
     cat.classList.add("collapsed");
-
-    const header = cat.querySelector(".pattern-category-header");
-    if (!header) return;
-
-    header.addEventListener("click", () => {
-      cat.classList.toggle("collapsed");
-    });
+    const h = cat.querySelector(".pattern-category-header");
+    h.onclick = () => cat.classList.toggle("collapsed");
   });
 }
 
 /*****************************************************************
- * MINTÁK – SAJÁT SVG FÁJLOKBÓL (PC + MOBIL DRAG/RESIZE)
+ * MINTÁK BETÖLTÉSE
  *****************************************************************/
 function initPatterns() {
-  // Mintagombok: a bennük lévő <img> src az igazi SVG útvonal
   document.querySelectorAll(".pattern-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
+
       const img = btn.querySelector("img");
-      if (!img) return;
+      const src = img.getAttribute("src");
+      const alt = img.getAttribute("alt") || "";
 
       try {
-        const src = img.getAttribute("src");
-        const alt = img.getAttribute("alt") || "";
-        const svgText = await loadSvgAsText(src);
-        addPatternFromSvg(svgText, { src, alt });
-      } catch (err) {
-        console.error("SVG betöltési hiba:", err);
-        alert(
-          "Nem sikerült betölteni a minta SVG-t.\n" +
-          "Ellenőrizd, hogy az icons/*.svg fájlok feltöltve vannak, " +
-          "és a fájlnevek pontosan megegyeznek az index.html-ben levő src-kkel."
-        );
+        const svg = await loadSvg(src);
+        addPattern(svg, src, alt);
+      } catch (e) {
+        alert("Hiba az SVG betöltésében: " + src);
       }
+
     });
   });
 
+  // Közös drag / resize listener
   const layer = document.getElementById("patterns-layer");
 
-  // PC: drag / resize indítása
-  layer.addEventListener("mousedown", (e) => {
-    if (e.button !== 0) return;
-
-    const pattern = e.target.closest(".pattern");
-    if (!pattern) return;
-
-    setActivePattern(pattern);
-
-    if (e.target.classList.contains("resize-handle")) {
-      startPatternResize(e, pattern);
-    } else {
-      startPatternDrag(e, pattern);
-    }
-
-    e.preventDefault();
+  layer.addEventListener("mousedown", e => {
+    const p = e.target.closest(".pattern");
+    if (!p) return;
+    setActivePattern(p);
+    if (e.target.classList.contains("resize-handle")) startPatternResize(e, p);
+    else startPatternDrag(e, p);
   });
 
-  // MOBIL: drag / resize indítása
-  layer.addEventListener("touchstart", (e) => {
-    const pattern = e.target.closest(".pattern");
-    if (!pattern) return;
-
-    setActivePattern(pattern);
-
-    if (e.target.classList.contains("resize-handle")) {
-      startPatternResize(e, pattern);
-    } else {
-      startPatternDrag(e, pattern);
-    }
-
-    e.preventDefault();
+  layer.addEventListener("touchstart", e => {
+    const p = e.target.closest(".pattern");
+    if (!p) return;
+    setActivePattern(p);
+    if (e.target.classList.contains("resize-handle")) startPatternResize(e, p);
+    else startPatternDrag(e, p);
   }, { passive: false });
 
-  // Mozgatás – mindkét inputtípus
   document.addEventListener("mousemove", onPatternMove);
-  document.addEventListener("touchmove", (e) => {
-    onPatternMove(e);
-    if (patternDrag || patternResize) {
-      e.preventDefault();
-    }
-  }, { passive: false });
-
-  // Felengedés – mindkét inputtípus
-  document.addEventListener("mouseup", onPatternUp);
-  document.addEventListener("touchend", onPatternUp);
+  document.addEventListener("touchmove", e => { onPatternMove(e); e.preventDefault(); }, { passive: false });
+  document.addEventListener("mouseup", endPatternMove);
+  document.addEventListener("touchend", endPatternMove);
 }
 
-/** SVG betöltése szövegként (ugyanarról a domainről) */
-async function loadSvgAsText(url) {
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Nem sikerült betölteni: ${url}`);
-  }
-  return await res.text();
+async function loadSvg(url) {
+  const r = await fetch(url);
+  return await r.text();
 }
 
-/** Új minta létrehozása egy SVG szövegből – induló valós magasság: 4 cm */
-function addPatternFromSvg(svgText, meta = {}) {
+/*****************************************************************
+ * ÚJ MINTA LÉTREHOZÁSA
+ *****************************************************************/
+function addPattern(svgText, src, alt) {
   const layer = document.getElementById("patterns-layer");
-  const layerRect = layer.getBoundingClientRect();
   const box = document.getElementById("box");
-  const boxRect = box.getBoundingClientRect();
 
   const el = document.createElement("div");
   el.className = "pattern";
   el.innerHTML = svgText;
+  el.dataset.src = src;
+  el.dataset.alt = alt;
 
-  // meta adatok CSV-hez
-  el.dataset.src = meta.src || "";
-  el.dataset.alt = meta.alt || "";
-
-  // SVG arány a viewBox-ból
+  // SVG arány
   const svg = el.querySelector("svg");
   let aspect = 1;
-  if (svg && svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.height) {
+  if (svg && svg.viewBox && svg.viewBox.baseVal.height !== 0) {
     const vb = svg.viewBox.baseVal;
-    if (vb.height !== 0) {
-      aspect = vb.width / vb.height;
-    }
+    aspect = vb.width / vb.height;
   }
 
-  // doboz valós mérete: 31×22.5 cm → px/cm
-  const BOX_CM_HEIGHT = 22.5;
-  const pxPerCmH = boxRect.height / BOX_CM_HEIGHT;
+  const br = box.getBoundingClientRect();
+  const pxPerCm = br.height / 22.5;
+  const h = 4 * pxPerCm;
 
-  // induló valós magasság 4 cm
-  const baseHeightPx = 4 * pxPerCmH;
-  let heightPx = clamp(baseHeightPx, MIN_PATTERN, MAX_PATTERN);
-  let widthPx  = heightPx * aspect;
+  el.style.height = h + "px";
+  el.style.width = (h * aspect) + "px";
 
-  el.style.width  = `${widthPx}px`;
-  el.style.height = `${heightPx}px`;
+  el.style.left = (br.width - h * aspect) / 2 + "px";
+  el.style.top = (br.height - h) / 2 + "px";
 
-  // középre igazítás az aktuális méretekkel
-  const left = (layerRect.width  - widthPx)  / 2;
-  const top  = (layerRect.height - heightPx) / 2;
-  el.style.left = `${left}px`;
-  el.style.top  = `${top}px`;
-
-  // resize fogantyú
+  // Resize fogantyú
   const handle = document.createElement("div");
   handle.className = "resize-handle";
   el.appendChild(handle);
 
   layer.appendChild(el);
 
-  // aktuális mintaszín rákényszerítése
   applyPatternColor(el, currentPatternColor);
   setActivePattern(el);
 }
 
-function setActivePattern(el) {
-  activePattern = el;
-  document.querySelectorAll(".pattern").forEach(p => p.classList.remove("active"));
-  if (el) el.classList.add("active");
-}
-
-/**
- * Mintaszín alkalmazása az SVG-n belül + dataset.color beállítása.
- */
-function applyPatternColor(patternEl, color) {
-  const svg = patternEl.querySelector("svg");
+/*****************************************************************
+ * MINTA SZÍNEZÉSE
+ *****************************************************************/
+function applyPatternColor(pattern, color) {
+  const svg = pattern.querySelector("svg");
   if (!svg) return;
 
-  const targets = svg.querySelectorAll(
-    "path, rect, circle, ellipse, polygon, polyline"
-  );
-
-  targets.forEach(el => {
-    const fillAttr = el.getAttribute("fill");
-    if (fillAttr !== "none") {
-      el.setAttribute("fill", color);
-      el.style.fill = color;
-    }
-    const strokeAttr = el.getAttribute("stroke");
-    if (strokeAttr && strokeAttr !== "none") {
-      el.setAttribute("stroke", color);
-      el.style.stroke = color;
-    }
+  svg.querySelectorAll("path,rect,circle,ellipse,polygon,polyline").forEach(n => {
+    if (n.getAttribute("fill") !== "none") n.setAttribute("fill", color);
+    if (n.getAttribute("stroke")) n.setAttribute("stroke", color);
   });
 
-  const styleEl = svg.querySelector("style");
-  if (styleEl && styleEl.textContent.includes("fill:")) {
-    styleEl.textContent = styleEl.textContent.replace(
-      /fill:\s*#[0-9a-fA-F]{3,6}/g,
-      `fill:${color}`
-    );
-  }
-
-  patternEl.dataset.color = color;
+  pattern.dataset.color = color;
 }
 
-/* -------- DRAG (EGYBEN PC + MOBILRA) -------- */
-
-function startPatternDrag(e, pattern) {
-  const pos = getPointerPosition(e);
-  const layer = pattern.parentElement;
-  const layerRect = layer.getBoundingClientRect();
-  const rect = pattern.getBoundingClientRect();
-
-  const offsetX = pos.x - rect.left;
-  const offsetY = pos.y - rect.top;
+/*****************************************************************
+ * MINTA DRAG / RESIZE
+ *****************************************************************/
+function startPatternDrag(e, el) {
+  const pos = getPointer(e);
+  const r = el.getBoundingClientRect();
+  const layer = el.parentElement.getBoundingClientRect();
 
   patternDrag = {
-    pattern,
-    layerRect,
-    offsetX,
-    offsetY
+    el,
+    offsetX: pos.x - r.left,
+    offsetY: pos.y - r.top,
+    layerRect: layer
   };
 }
 
-/* -------- RESIZE (EGYBEN PC + MOBILRA) -------- */
-
-function startPatternResize(e, pattern) {
-  const pos = getPointerPosition(e);
-  const rect = pattern.getBoundingClientRect();
+function startPatternResize(e, el) {
+  const pos = getPointer(e);
+  const r = el.getBoundingClientRect();
   patternResize = {
-    pattern,
+    el,
     startX: pos.x,
-    startY: pos.y,
-    startWidth: rect.width,
-    startHeight: rect.height,
-    aspect: rect.width / rect.height
+    startWidth: r.width,
+    aspect: r.width / r.height
   };
 }
 
 function onPatternMove(e) {
-  const pos = getPointerPosition(e);
+  const pos = getPointer(e);
 
-  // drag
   if (patternDrag) {
-    const { pattern, layerRect, offsetX, offsetY } = patternDrag;
+    const p = patternDrag;
+    let L = pos.x - p.layerRect.left - p.offsetX;
+    let T = pos.y - p.layerRect.top - p.offsetY;
 
-    let newLeft = pos.x - layerRect.left - offsetX;
-    let newTop  = pos.y - layerRect.top  - offsetY;
+    L = clamp(L, 0, p.layerRect.width - p.el.offsetWidth);
+    T = clamp(T, 0, p.layerRect.height - p.el.offsetHeight);
 
-    const maxLeft = layerRect.width  - pattern.offsetWidth;
-    const maxTop  = layerRect.height - pattern.offsetHeight;
-
-    newLeft = clamp(newLeft, 0, maxLeft);
-    newTop  = clamp(newTop, 0, maxTop);
-
-    pattern.style.left = `${newLeft}px`;
-    pattern.style.top  = `${newTop}px`;
+    p.el.style.left = L + "px";
+    p.el.style.top  = T + "px";
   }
 
-  // resize
   if (patternResize) {
-    const { pattern, startX, startWidth, aspect } = patternResize;
-    const dx = pos.x - startX;
-    const delta = dx;
-
-    let newWidth = startWidth + delta;
-    newWidth = clamp(newWidth, MIN_PATTERN, MAX_PATTERN);
-    const newHeight = newWidth / aspect;
-
-    pattern.style.width  = `${newWidth}px`;
-    pattern.style.height = `${newHeight}px`;
+    const r = patternResize;
+    let w = r.startWidth + (pos.x - r.startX);
+    w = clamp(w, MIN_PATTERN, MAX_PATTERN);
+    r.el.style.width = w + "px";
+    r.el.style.height = (w / r.aspect) + "px";
   }
 }
 
-function onPatternUp() {
+function endPatternMove() {
   patternDrag = null;
   patternResize = null;
 }
 
+function setActivePattern(el) {
+  document.querySelectorAll(".pattern").forEach(p => p.classList.remove("active"));
+  el.classList.add("active");
+  activePattern = el;
+}
+
 /*****************************************************************
- * TÖRLÉS, MÁSOLÁS / BEILLESZTÉS
+ * TÖRLÉS / MÁSOLÁS / BEILLESZTÉS
  *****************************************************************/
 function initShortcuts() {
-  const deleteBtn = document.getElementById("delete-pattern-btn");
-  if (deleteBtn) {
-    deleteBtn.addEventListener("click", () => {
-      deleteActivePattern();
-    });
-  }
+  document.getElementById("delete-pattern-btn").onclick = () => deletePattern();
 
-  document.addEventListener("keydown", (e) => {
-    const tag = (e.target && e.target.tagName || "").toLowerCase();
-    if (tag === "input" || tag === "textarea") return;
+  document.addEventListener("keydown", e => {
+    if (e.target.tagName === "INPUT") return;
 
-    // törlés – Delete / Backspace
-    if ((e.key === "Delete" || e.key === "Backspace") && activePattern) {
-      e.preventDefault();
-      deleteActivePattern();
-      return;
-    }
+    if (e.key === "Delete" && activePattern) deletePattern();
 
-    // Ctrl+C – másolás
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c" && activePattern) {
-      e.preventDefault();
-      copyActivePattern();
-      return;
-    }
-
-    // Ctrl+V – beillesztés
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v" && clipboardPattern) {
-      e.preventDefault();
-      pastePattern();
-      return;
-    }
+    if (e.ctrlKey && e.key === "c" && activePattern) copyPattern();
+    if (e.ctrlKey && e.key === "v" && clipboardPattern) pastePattern();
   });
 }
 
-function deleteActivePattern() {
+function deletePattern() {
   if (!activePattern) return;
   activePattern.remove();
   activePattern = null;
 }
 
-function copyActivePattern() {
-  if (!activePattern) return;
+function copyPattern() {
   const svg = activePattern.querySelector("svg");
-  if (!svg) return;
   clipboardPattern = {
     svg: svg.outerHTML,
-    width: activePattern.offsetWidth,
-    height: activePattern.offsetHeight,
-    alt: activePattern.dataset.alt || "",
-    src: activePattern.dataset.src || "",
-    color: activePattern.dataset.color || ""
+    w: activePattern.offsetWidth,
+    h: activePattern.offsetHeight,
+    color: activePattern.dataset.color,
+    alt: activePattern.dataset.alt
   };
 }
 
 function pastePattern() {
-  if (!clipboardPattern) return;
   const layer = document.getElementById("patterns-layer");
-  const layerRect = layer.getBoundingClientRect();
+  const box = document.getElementById("box").getBoundingClientRect();
 
   const el = document.createElement("div");
   el.className = "pattern";
   el.innerHTML = clipboardPattern.svg;
+  el.style.width = clipboardPattern.w + "px";
+  el.style.height = clipboardPattern.h + "px";
 
-  el.dataset.alt = clipboardPattern.alt || "";
-  el.dataset.src = clipboardPattern.src || "";
+  el.style.left = (box.width / 2 - clipboardPattern.w / 2) + "px";
+  el.style.top  = (box.height / 2 - clipboardPattern.h / 2) + "px";
 
-  const handle = document.createElement("div");
-  handle.className = "resize-handle";
-  el.appendChild(handle);
-
-  el.style.width  = clipboardPattern.width + "px";
-  el.style.height = clipboardPattern.height + "px";
-
-  let baseLeft = (layerRect.width  - clipboardPattern.width)  / 2;
-  let baseTop  = (layerRect.height - clipboardPattern.height) / 2;
-
-  if (activePattern) {
-    baseLeft = activePattern.offsetLeft + 20;
-    baseTop  = activePattern.offsetTop  + 20;
-  }
-
-  el.style.left = baseLeft + "px";
-  el.style.top  = baseTop + "px";
+  const h = document.createElement("div");
+  h.className = "resize-handle";
+  el.appendChild(h);
 
   layer.appendChild(el);
-
-  if (clipboardPattern.color) {
-    applyPatternColor(el, clipboardPattern.color);
-  } else {
-    applyPatternColor(el, currentPatternColor);
-  }
-
+  applyPatternColor(el, clipboardPattern.color);
   setActivePattern(el);
 }
 
 /*****************************************************************
- * PNG EXPORT – natúr fa háttérrel együtt
+ * PNG EXPORT
  *****************************************************************/
 function initExport() {
   const btn = document.getElementById("export-btn");
   const box = document.getElementById("box");
-  if (!btn || !box) return;
 
-  btn.addEventListener("click", async () => {
-    let prevActive = document.querySelector(".pattern.active");
-
-    // Aktív minta keretének elrejtése export idejére
+  btn.onclick = async () => {
     document.querySelectorAll(".pattern").forEach(p => p.classList.remove("active"));
     document.body.classList.add("exporting");
 
-    try {
-      const canvas = await html2canvas(box, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: null,
-        logging: false
-      });
+    const canvas = await html2canvas(box, {
+      scale: 2,
+      backgroundColor: null
+    });
 
-      const link = document.createElement("a");
-      link.href = canvas.toDataURL("image/png");
-      link.download = "emlekdoboz_terv.png";
-      link.click();
-    } catch (err) {
-      console.error("Export hiba:", err);
-      alert("Hiba történt a PNG export során.");
-    } finally {
-      document.body.classList.remove("exporting");
-      if (prevActive) prevActive.classList.add("active");
-    }
-  });
+    const a = document.createElement("a");
+    a.download = "emlekdoboz.png";
+    a.href = canvas.toDataURL();
+    a.click();
+
+    document.body.classList.remove("exporting");
+  };
 }
 
 /*****************************************************************
- * CSV EXPORT – felirat + minták valós gyártási méretei
+ * CSV EXPORT
  *****************************************************************/
 function initCsvExport() {
   const btn = document.getElementById("export-csv-btn");
-  const box = document.getElementById("box");
-  if (!btn || !box) return;
 
-  btn.addEventListener("click", () => {
-    const boxRect = box.getBoundingClientRect();
-
-    const BOX_CM_WIDTH  = 31.0; // 310 mm
-    const BOX_CM_HEIGHT = 22.5; // 225 mm
-
-    const pxToCmW = BOX_CM_WIDTH  / boxRect.width;
-    const pxToCmH = BOX_CM_HEIGHT / boxRect.height;
-
+  btn.onclick = () => {
     const rows = [];
-    rows.push("Típus;Név;Szélesség (cm);Magasság (cm);Szín (hex);Szín (név)");
+    rows.push("Típus;Név;Szélesség(cm);Magasság(cm);Szín(hex);Szín(név)");
+
+    const box = document.getElementById("box").getBoundingClientRect();
+    const cmW = 31;
+    const cmH = 22.5;
+
+    const pxToCmW = cmW / box.width;
+    const pxToCmH = cmH / box.height;
 
     // Felirat
-    const titleBox   = document.getElementById("title-box");
-    const titleRect  = titleBox.getBoundingClientRect();
-    const titleInput = document.getElementById("title-input");
-
-    const titleWcm = (titleRect.width  * pxToCmW).toFixed(2);
-    const titleHcm = (titleRect.height * pxToCmH).toFixed(2);
-
-    const titleHex  = normalizeHex(currentTitleColor);
-    const titleName = colorNameFromHex(titleHex);
+    const t = document.getElementById("title-box").getBoundingClientRect();
+    const name = document.getElementById("title-input").value;
 
     rows.push([
       "Felirat",
-      csvEscape(titleInput.value || "Felirat"),
-      titleWcm.replace(".", ","),
-      titleHcm.replace(".", ","),
-      titleHex,
-      titleName
+      name,
+      (t.width * pxToCmW).toFixed(2),
+      (t.height * pxToCmH).toFixed(2),
+      currentTitleColor,
+      COLOR_NAMES[currentTitleColor]
     ].join(";"));
 
     // Minták
-    const patterns = document.querySelectorAll("#patterns-layer .pattern");
-    patterns.forEach((patternEl, idx) => {
-      const rect = patternEl.getBoundingClientRect();
-      const wCm  = (rect.width  * pxToCmW).toFixed(2);
-      const hCm  = (rect.height * pxToCmH).toFixed(2);
-
-      const hexRaw = patternEl.dataset.color || currentPatternColor;
-      const hex    = normalizeHex(hexRaw);
-      const name   = colorNameFromHex(hex);
-
-      const label  = patternEl.dataset.alt || `Minta ${idx + 1}`;
+    document.querySelectorAll(".pattern").forEach((el, i) => {
+      const r = el.getBoundingClientRect();
+      const col = el.dataset.color;
 
       rows.push([
         "Minta",
-        csvEscape(label),
-        wCm.replace(".", ","),
-        hCm.replace(".", ","),
-        hex,
-        name
+        el.dataset.alt || ("Minta " + (i + 1)),
+        (r.width * pxToCmW).toFixed(2),
+        (r.height * pxToCmH).toFixed(2),
+        col,
+        COLOR_NAMES[col]
       ].join(";"));
     });
 
-    const csvContent = rows.join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url  = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "emlekdoboz_meretek.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  });
-}
-
-/* Segédfüggvények CSV-hez */
-
-function normalizeHex(hex) {
-  if (!hex) return "";
-  let h = String(hex).trim();
-  if (!h.startsWith("#")) return h.toLowerCase();
-  return h.toLowerCase();
-}
-
-function colorNameFromHex(hex) {
-  hex = normalizeHex(hex);
-  return COLOR_NAMES[hex] || hex;
-}
-
-function csvEscape(text) {
-  const t = String(text || "");
-  if (t.includes(";") || t.includes('"')) {
-    return '"' + t.replace(/"/g, '""') + '"';
-  }
-  return t;
+    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "emlekdoboz_meretek.csv";
+    a.click();
+  };
 }
 
 /*****************************************************************
- * MINTA TÜKRÖZÉSE + 90° FORGATÁS
+ * GRAVÍR MÓD HELYE (MASZK + TEXTÚRA)
+ *****************************************************************
+ * Itt fogjuk beépíteni a 3 gravír textúrát:
+ *
+ * 1) pattern->SVG → mask
+ * 2) mögé → gravír texture (finom / közepes / erős)
+ * 3) overlay blending
+ *
+ * NINCS még aktiválva — először a textúrákat generáljuk.
  *****************************************************************/
-
-function updatePatternTransform(el) {
-  if (!el) return;
-
-  const flip = el.dataset.flip === "true";
-  const rotation = parseInt(el.dataset.rotation || "0", 10);
-
-  const scaleX = flip ? -1 : 1;
-  el.style.transform = `scaleX(${scaleX}) rotate(${rotation}deg)`;
-}
-
-/* Tükrözés gomb */
-const flipBtn = document.getElementById("flip-pattern-btn");
-if (flipBtn) {
-  flipBtn.addEventListener("click", () => {
-    if (!activePattern) return;
-
-    const current = activePattern.dataset.flip === "true";
-    activePattern.dataset.flip = current ? "false" : "true";
-
-    updatePatternTransform(activePattern);
-  });
-}
-
-/* Forgatás gomb (90°-onként) */
-const rotateBtn = document.getElementById("rotate-pattern-btn");
-if (rotateBtn) {
-  rotateBtn.addEventListener("click", () => {
-    if (!activePattern) return;
-
-    const currentRotation = parseInt(activePattern.dataset.rotation || "0", 10);
-    const newRotation = (currentRotation + 90) % 360;
-
-    activePattern.dataset.rotation = String(newRotation);
-
-    updatePatternTransform(activePattern);
-  });
-}

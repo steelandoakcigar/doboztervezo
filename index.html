@@ -14,8 +14,13 @@
       <!-- Felirat blokk -->
       <section class="panel-section">
         <h2>Felirat</h2>
+
         <label class="field-label" for="title-input">Felirat szövege</label>
-        <input id="title-input" type="text" placeholder="Írd ide a feliratot..." />
+        <input
+          id="title-input"
+          type="text"
+          placeholder="Írd ide a feliratot..."
+        />
 
         <label class="field-label" for="title-size">Felirat magasság (cm)</label>
         <div class="field-row">
@@ -36,256 +41,9 @@
         </div>
       </section>
 
-      <!-- Minták blokk – témákra bontva, nyilas összecsukással -->
+      <!-- Minták blokk – jelenleg csak Ünnepek -->
       <section class="panel-section">
         <h2>Minták</h2>
-
-        <!-- ÉGITESTEK TÉMA -->
-        <div class="pattern-category collapsed">
-          <button class="pattern-category-header" type="button">
-            <span>Égitestek</span>
-            <span class="pattern-category-arrow">▾</span>
-          </button>
-          <div class="pattern-category-body">
-            <div class="pattern-grid">
-              <button class="pattern-btn" type="button">
-                <img src="icons/cloud_1.svg" alt="Felhő 1" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/cloud_2.svg" alt="Felhő 2" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/star_1.svg" alt="Csillag 1" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/star_2.svg" alt="Csillag 2" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- KALÓZOS / TENGERI TÉMA -->
-        <div class="pattern-category collapsed">
-          <button class="pattern-category-header" type="button">
-            <span>Kalózos / tengeri</span>
-            <span class="pattern-category-arrow">▾</span>
-          </button>
-          <div class="pattern-category-body">
-            <div class="pattern-grid">
-              <button class="pattern-btn" type="button">
-                <img src="icons/anchor.svg" alt="Horgony" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/ship.svg" alt="Hajó" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/wheel.svg" alt="Kormánykerék" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/starfish.svg" alt="Tengeri csillag" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/whale.svg" alt="Bálna" />
-              </button>
-              <!-- ITT VOLT A TEKNŐS, HELYETTE POLIP -->
-              <button class="pattern-btn" type="button">
-                <img src="icons/polip.svg" alt="Polip" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/shark.svg" alt="Cápa" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/sword.svg" alt="Kard" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/pirate_hat.svg" alt="Kalóz kalap" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/skull.svg" alt="Koponya" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/bones.svg" alt="Csontok" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/skeleton.svg" alt="Csontváz" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- BABYGIRL TÉMA -->
-        <div class="pattern-category collapsed">
-          <button class="pattern-category-header" type="button">
-            <span>Babygirl</span>
-            <span class="pattern-category-arrow">▾</span>
-          </button>
-          <div class="pattern-category-body">
-            <div class="pattern-grid">
-              <button class="pattern-btn" type="button">
-                <img src="icons/masni.svg" alt="Masni" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/pillango.svg" alt="Pillangó" />
-              </button>
-
-              <button class="pattern-btn" type="button">
-                <img src="icons/sziv1.svg" alt="Szív 1" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/sziv2.svg" alt="Szív 2" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/sziv3.svg" alt="Szív 3" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/sziv4.svg" alt="Szív 4" />
-              </button>
-
-              <button class="pattern-btn" type="button">
-                <img src="icons/unicornis1.svg" alt="Unikornis" />
-              </button>
-
-              <button class="pattern-btn" type="button">
-                <img src="icons/virag1.svg" alt="Virág 1" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/virag2.svg" alt="Virág 2" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/virag3.svg" alt="Virág 3" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/virag4.svg" alt="Virág 4" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/virag5.svg" alt="Virág 5" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/virag6.svg" alt="Virág 6" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/virag7.svg" alt="Virág 7" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- ÁLLATOS TÉMA -->
-        <div class="pattern-category collapsed">
-          <button class="pattern-category-header" type="button">
-            <span>Állatos</span>
-            <span class="pattern-category-arrow">▾</span>
-          </button>
-          <div class="pattern-category-body">
-            <div class="pattern-grid">
-              <button class="pattern-btn" type="button">
-                <img src="icons/bee.svg" alt="Méh" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/borz.svg" alt="Borz" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/cat.svg" alt="Cica" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/chick.svg" alt="Csibe" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/cow.svg" alt="Tehén" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/crocodile.svg" alt="Krokodil" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/dinosaur.svg" alt="Dínó" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/Dolphin.svg" alt="Delfin" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/dog.svg" alt="Kutya" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/duck.svg" alt="Kacsa" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/elefant.svg" alt="Elefánt" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/eger.svg" alt="Egér" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/gorilla.svg" alt="Gorilla" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/horse.svg" alt="Ló" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/krokodil.svg" alt="Krokodil 2" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/ladybird.svg" alt="Katica" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/leopard.svg" alt="Leopárd" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/maci.svg" alt="Maci" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/mokus.svg" alt="Mókus" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/mosomaci.svg" alt="Mosómedve" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/nyuszi.svg" alt="Nyuszi" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/ozike.svg" alt="Őzike" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/oroszlan.svg" alt="Oroszlán" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/orrszarvu.svg" alt="Orrszarvú" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/roka.svg" alt="Róka" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/snake.svg" alt="Kígyó" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/suni.svg" alt="Süni" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/szarvas.svg" alt="Szarvas" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/szurikata.svg" alt="Szurikáta" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/swan.svg" alt="Hattyú" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/tigris.svg" alt="Tigris" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/turtle.svg" alt="Teknős" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/vaddiszno.svg" alt="Vaddisznó" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/zebra.svg" alt="Zebra" />
-              </button>
-              <button class="pattern-btn" type="button">
-                <img src="icons/zsiraf.svg" alt="Zsiráf" />
-              </button>
-            </div>
-          </div>
-        </div>
 
         <!-- ÜNNEPEK TÉMA -->
         <div class="pattern-category collapsed">
@@ -296,72 +54,74 @@
           <div class="pattern-category-body">
             <div class="pattern-grid">
               <button class="pattern-btn" type="button">
-                <img src="icons/cukorka.svg" alt="Cukorka" />
+                <img src="icons/Unnepek/halloween_tok.svg" alt="Halloween tök" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/csizma.svg" alt="Csizma" />
+                <img src="icons/Unnepek/husvet_nyuszi.svg" alt="Húsvéti nyuszi" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/denever.svg" alt="Denevér" />
+                <img src="icons/Unnepek/husvet_repa.svg" alt="Húsvéti répa" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/fenyo1.svg" alt="Fenyő" />
+                <img src="icons/Unnepek/husvet_tojas.svg" alt="Húsvéti tojás 1" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/hoember.svg" alt="Hóember" />
+                <img src="icons/Unnepek/husvet_tojas2.svg" alt="Húsvéti tojás 2" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/hopehely.svg" alt="Hópehely" />
+                <img src="icons/Unnepek/kar_hoember.svg" alt="Karácsonyi hóember" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/ijedtmacska.svg" alt="Ijedt macska" />
+                <img src="icons/Unnepek/karacsony_csaladozike.svg" alt="Karácsonyi családozike" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/macska2.svg" alt="Macska 2" />
+                <img src="icons/Unnepek/karacsony_diotoro1.svg" alt="Diótörő 1" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/koponya.svg" alt="Koponya (ünnepi)" />
+                <img src="icons/Unnepek/karacsony_diotoro2.svg" alt="Diótörő 2" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/mezi.svg" alt="Mézi" />
+                <img src="icons/Unnepek/karacsony_fagyongy.svg" alt="Fagyöngy" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/mikulas.svg" alt="Mikulás" />
+                <img src="icons/Unnepek/karacsony_kacsak.svg" alt="Karácsonyi kacsák" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/pokhalo.svg" alt="Pókháló 1" />
+                <img src="icons/Unnepek/karacsony_maci.svg" alt="Karácsonyi maci" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/pokhalo2.svg" alt="Pókháló 2" />
+                <img src="icons/Unnepek/karacsony_mokus.svg" alt="Karácsonyi mókus" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/szan.svg" alt="Szán" />
+                <img src="icons/Unnepek/karacsony_nyaloka.svg" alt="Nyalóka" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/szarvas.svg" alt="Szarvas" />
+                <img src="icons/Unnepek/karacsony_nyuszi.svg" alt="Karácsonyi nyuszi" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/szellem1.svg" alt="Szellem 1" />
+                <img src="icons/Unnepek/karacsony_ozike.svg" alt="Karácsonyi őzike" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/szellem2.svg" alt="Szellem 2" />
+                <img src="icons/Unnepek/karacsony_ozikepar.svg" alt="Őzike pár" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/tok1.svg" alt="Tök 1" />
+                <img src="icons/Unnepek/karacsony_roka.svg" alt="Karácsonyi róka 1" />
               </button>
               <button class="pattern-btn" type="button">
-                <img src="icons/hintalo.svg" alt="Hintaló" />
+                <img src="icons/Unnepek/karacsony_roka2.svg" alt="Karácsonyi róka 2" />
+              </button>
+              <button class="pattern-btn" type="button">
+                <img src="icons/Unnepek/karacsony_szan.svg" alt="Karácsonyi szán" />
               </button>
             </div>
           </div>
         </div>
 
         <div class="palette-block">
-          <div class="palette-title">Minták színe</div>
+          <div class="palette-title">Minták színe (gravír tónus)</div>
           <div id="pattern-palette" class="color-palette"></div>
         </div>
 
-        <!-- ÚJ GOMBOK: tükrözés + forgatás -->
         <button id="flip-pattern-btn" class="secondary-btn" type="button">
           Minta tükrözése (bal ↔ jobb)
         </button>
@@ -398,7 +158,7 @@
       <div class="workspace-inner">
         <div id="box-wrapper">
           <div id="box">
-            <!-- CSAK a tartalmi rétegek: a fa háttér CSS-ből jön -->
+            <!-- Tartalmi rétegek (fa háttér CSS-ből jön) -->
             <div id="patterns-layer"></div>
             <div id="title-layer">
               <div id="title-box">
