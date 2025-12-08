@@ -2,7 +2,7 @@
 <html lang="hu">
 <head>
   <meta charset="UTF-8" />
-  <title>Emlékdoboz tervező</title>
+  <title>Emlékdoboz tervező – Gravír verzió</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -36,14 +36,18 @@
         </div>
 
         <div class="palette-block">
-          <div class="palette-title">Felirat színe</div>
+          <div class="palette-title">Felirat színe (PintyPlus)</div>
           <div id="title-palette" class="color-palette"></div>
         </div>
+
+        <button id="center-title-btn" class="secondary-btn" type="button">
+          Felirat középre igazítása
+        </button>
       </section>
 
       <!-- Minták blokk – jelenleg csak Ünnepek -->
       <section class="panel-section">
-        <h2>Minták</h2>
+        <h2>Minták (gravírozás)</h2>
 
         <!-- ÜNNEPEK TÉMA -->
         <div class="pattern-category collapsed">
@@ -68,6 +72,7 @@
               <button class="pattern-btn" type="button">
                 <img src="icons/Unnepek/husvet_tojas2.svg" alt="Húsvéti tojás 2" />
               </button>
+
               <button class="pattern-btn" type="button">
                 <img src="icons/Unnepek/kar_hoember.svg" alt="Karácsonyi hóember" />
               </button>
@@ -83,6 +88,7 @@
               <button class="pattern-btn" type="button">
                 <img src="icons/Unnepek/karacsony_fagyongy.svg" alt="Fagyöngy" />
               </button>
+
               <button class="pattern-btn" type="button">
                 <img src="icons/Unnepek/karacsony_kacsak.svg" alt="Karácsonyi kacsák" />
               </button>
@@ -98,6 +104,7 @@
               <button class="pattern-btn" type="button">
                 <img src="icons/Unnepek/karacsony_nyuszi.svg" alt="Karácsonyi nyuszi" />
               </button>
+
               <button class="pattern-btn" type="button">
                 <img src="icons/Unnepek/karacsony_ozike.svg" alt="Karácsonyi őzike" />
               </button>
@@ -117,10 +124,7 @@
           </div>
         </div>
 
-        <div class="palette-block">
-          <div class="palette-title">Minták színe (gravír tónus)</div>
-          <div id="pattern-palette" class="color-palette"></div>
-        </div>
+        <!-- NINCS gravír színválasztó! Fix közepes barna. -->
 
         <button id="flip-pattern-btn" class="secondary-btn" type="button">
           Minta tükrözése (bal ↔ jobb)
@@ -148,7 +152,7 @@
           Méretek mentése (CSV)
         </button>
         <div class="hint-text">
-          A PNG a látványtervet menti, a CSV a felirat és minták méretét, színét (színnévvel).
+          A PNG a látványtervet menti, a CSV a felirat és minták valós gyártási méretét, színét.
         </div>
       </section>
     </aside>
@@ -158,7 +162,7 @@
       <div class="workspace-inner">
         <div id="box-wrapper">
           <div id="box">
-            <!-- Tartalmi rétegek (fa háttér CSS-ből jön) -->
+            <!-- Fa háttér CSS-ből jön -->
             <div id="patterns-layer"></div>
             <div id="title-layer">
               <div id="title-box">

@@ -159,7 +159,7 @@ html, body {
   max-width: 85%;
   max-height: 85%;
   object-fit: contain;
-  /* Mindig fekete ikon előnézet */
+  /* Mindig fekete ikon előnézet (gravír kontúr) */
   filter: brightness(0) saturate(100%);
 }
 
@@ -331,7 +331,7 @@ html, body {
   outline: 1px dashed transparent;
   transform-origin: center center;
   /* enyhe gravír-hatás */
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
 }
 
 .pattern.active {
